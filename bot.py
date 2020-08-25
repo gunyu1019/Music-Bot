@@ -37,7 +37,7 @@ ydl_opts  = {
 #voice_setting = {
 #   repeat
 #   shuffle
-#}
+#} 양식
 
 def is_manager(user_id):
     file = open(directory + "/Setting/Manager.txt",mode='r')
