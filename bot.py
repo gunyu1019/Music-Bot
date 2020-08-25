@@ -117,7 +117,7 @@ async def m_play(message,voiceC):
         music_file = discord.FFmpegOpusAudio(file, bitrate=320)
         voiceC.play(music_file) #-> 버그, 여기서 플레이가 끝날때까지 기달려야됨.
         while voiceC.is_playing(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.1)
         #만약에 반복을 넣는 다면 del을 작동하되, 맨 끝에 똑같은 값을 재 대입시킴.
         del voice_channels[voiceC][0]
 
