@@ -105,15 +105,19 @@ async def download(video_id,link):
             ydl.download([link])
 
 async def m_play(message,voiceC):
+    global voice_channels
     while not len(voice_channels[voiceC]) == 0:
+        print(voice_channels)
         #만약에 셔플을 넣는다면 여기서 0이 아닌 len 내로 랜덤으로 지칭해 재생.
         file = f'{directory}/Music_cache/{voice_channels[voiceC][0][0]}.mp3'
-        embed = discord.Embed(title="Play!",description=f"[{voice_channels[voiceC][0][1]}](https://www.youtube.com/watch?v={voice_channels[voiceC][0][0]})를 재생합니다.", color=0x0080ff)
+        embed = discord.Embed(title="Play!",description=f"{voiceC.channel.name}에서 [{voice_channels[voiceC][0][1]}](https://www.youtube.com/watch?v={voice_channels[voiceC][0][0]})를 재생합니다.", color=0x0080ff)
         embed.set_thumbnail(url=voice_channels[voiceC][0][3])
         embed.set_footer(text=f'{voice_channels[voiceC][0][2]}가 신청한 노래입니다.',icon_url=voice_channels[voiceC][0][2].avatar_url)
         await message.channel.send(embed=embed)
         music_file = discord.FFmpegOpusAudio(file, bitrate=320)
-        voiceC.play(music_file)
+        voiceC.play(music_file) #-> 버그, 여기서 플레이가 끝날때까지 기달려야됨.
+        while voiceC.is_playing(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
+            await asyncio.sleep(0.01)
         #만약에 반복을 넣는 다면 del을 작동하되, 맨 끝에 똑같은 값을 재 대입시킴.
         del voice_channels[voiceC][0]
 
@@ -253,6 +257,9 @@ async def on_message(message):
             author = message.author
             await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
+            embed = discord.Embed(title="MusicBot!",description=f"[{title}](https://www.youtube.com/watch?v={video_id})가 정상적으로 추가되었습니다.", color=0x0080ff)
+            embed.set_footer(text=f'{voice_channels[voiceC][0][2]}가 등록하였습니다.',icon_url=voice_channels[voiceC][0][2].avatar_url)
+            await message.channel.send(embed=embed)
         if not voiceC.is_playing():
             await m_play(message,voiceC)
 
