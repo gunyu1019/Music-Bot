@@ -32,10 +32,10 @@ connect.close()
 
 client = discord.Client()
 voice_channels = {}
+voice_setting = {}
 ydl_opts  = {
     'format': 'bestaudio/bestaudio'
 }
-
 #voice_setting = {
 #   repeat
 #   shuffle
@@ -106,6 +106,7 @@ async def download(video_id,link):
 
 async def m_play(message,voiceC):
     while not len(voice_channels[voiceC]) == 0:
+        #만약에 셔플을 넣는다면 여기서 0이 아닌 len 내로 랜덤으로 지칭해 재생.
         file = f'{directory}/Music_cache/{voice_channels[voiceC][0][0]}.mp3'
         embed = discord.Embed(title="Play!",description=f"[{voice_channels[voiceC][0][1]}](https://www.youtube.com/watch?v={voice_channels[voiceC][0][0]})를 재생합니다.", color=0x0080ff)
         embed.set_thumbnail(url=voice_channels[voiceC][0][3])
@@ -113,7 +114,8 @@ async def m_play(message,voiceC):
         await message.channel.send(embed=embed)
         music_file = discord.FFmpegOpusAudio(file, bitrate=320)
         voiceC.play(music_file)
-        del(voice_channels[voiceC][0])
+        #만약에 반복을 넣는 다면 del을 작동하되, 맨 끝에 똑같은 값을 재 대입시킴.
+        del voice_channels[voiceC][0]
 
 async def playlist(voiceC,playlistId,author):
     params = {
@@ -202,6 +204,7 @@ async def on_message(message):
             embed = discord.Embed(title="MusicBot!",description=f"음성채널방에 들어가있지 않습니다.", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
+        del voice_channels[voiceC]
         await voiceC.disconnect()
         embed = discord.Embed(title="MusicBot!",description=f"{voiceC.channel}에 성공적으로 떠났습니다!", color=0x0080ff)
         await message.channel.send(embed=embed)
