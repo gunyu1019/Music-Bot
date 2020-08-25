@@ -1,5 +1,4 @@
 import discord
-import asyncio
 import aiohttp
 
 import os
@@ -8,7 +7,6 @@ import youtube_dl
 import pymysql
 import time
 
-from bs4 import BeautifulSoup
 from urllib import parse 
 
 directory = os.path.dirname(os.path.abspath(__file__)).replace("\\","/")
@@ -171,14 +169,14 @@ async def on_message(message):
         log_info(message.guild,message.channel,message.author,message.content)
         embed = discord.Embed(color=0x0080ff)
         embed.set_author(icon_url=client.user.avatar_url,name='Music Bot')
-        embed.add_field(name=f'음악',value='join,leave,play,skip,volume,pause,resume')
-        embed.add_field(name=f'관리',value='help,ping')
+        embed.add_field(name='음악',value='join,leave,play,skip,volume,pause,resume')
+        embed.add_field(name='관리',value='help,ping')
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}join':
         log_info(message.guild,message.channel,message.author,message.content)
         if message.author.voice == None:
-            embed = discord.Embed(title="MusicBot!",description=f"음성방에 들어가주세요!", color=0xaa0000)
+            embed = discord.Embed(title="MusicBot!",description="음성방에 들어가주세요!", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
         channel = message.author.voice.channel
@@ -191,7 +189,7 @@ async def on_message(message):
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None:
-            embed = discord.Embed(title="MusicBot!",description=f"None", color=0x0080ff)
+            embed = discord.Embed(title="MusicBot!",description="None", color=0x0080ff)
             await message.channel.send(embed=embed)
             return
         elif voiceC in voice_channels:
@@ -205,7 +203,7 @@ async def on_message(message):
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
-            embed = discord.Embed(title="MusicBot!",description=f"음성채널방에 들어가있지 않습니다.", color=0xaa0000)
+            embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
         del voice_channels[voiceC]
@@ -217,11 +215,11 @@ async def on_message(message):
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
-            embed = discord.Embed(title="MusicBot!",description=f"음성채널방에 들어가있지 않습니다.", color=0xaa0000)
+            embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
         if len(list_message) < 2:
-            embed = discord.Embed(title="MusicBot!",description=f"URL 혹은 영상 링크를 넣어주세요.", color=0xaa0000)
+            embed = discord.Embed(title="MusicBot!",description="URL 혹은 영상 링크를 넣어주세요.", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
         music = " ".join(list_message[1:])
@@ -230,7 +228,7 @@ async def on_message(message):
         if url_T.netloc.endswith('youtube.com'):
             for i in url_T.query.split('&'):
                 if i.startswith('list='):
-                    embed = discord.Embed(title="MusicBot!",description=f"재생목록을 다운로드받고 있습니다.\n상황에 따라 시간이 길게 소요될 수 있으니, 양해부탁드립니다.", color=0x0080ff)
+                    embed = discord.Embed(title="MusicBot!",description="재생목록을 다운로드받고 있습니다.\n상황에 따라 시간이 길게 소요될 수 있으니, 양해부탁드립니다.", color=0x0080ff)
                     await message.channel.send(embed=embed)
                     music = music.replace(i,'')
                     await playlist(voiceC,i.split('list=')[1],message.author)
@@ -247,7 +245,7 @@ async def on_message(message):
                 async with session.get(f"https://www.googleapis.com/youtube/v3/search",params=params) as resp:
                     html = await resp.json()
             if len(html['items']) == 0:
-                embed = discord.Embed(title="MusicBot!",description=f"검색결과가 없습니다..", color=0xaa0000)
+                embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
                 await message.channel.send(embed=embed)
                 return
             video = html['items'][0]
