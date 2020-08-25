@@ -6,6 +6,7 @@ import os
 import json
 import youtube_dl
 import pymysql
+import time
 
 from bs4 import BeautifulSoup
 from urllib import parse 
@@ -35,6 +36,43 @@ ydl_opts  = {
     'format': 'bestaudio/bestaudio'
 }
 
+def is_manager(user_id):
+    file = open(directory + "/Setting/Manager.txt",mode='r')
+    cache1 = file.readlines()
+    file.close()
+    for i in range(len(cache1)):
+        if user_id == cache1[i]:
+            return True
+    return False
+
+def is_admin(message):
+    for i in range(len(message.author.roles)):
+        if message.author.roles[i].permissions.administrator:
+            return True
+    return False   
+
+def log_info(guild, channel, user, message):
+    r_time = time.strftime('%Y-%m-%d %p %I:%M:%S', time.localtime(time.time()))
+    print(f"[{r_time} | {guild} | {channel} | {user}]: {message}")
+    log = open(f"{directory}/Log/message.txt","a",encoding = 'utf-8')
+    log.write(f"[{r_time} | {guild} | {channel} | {user}]: {message}\n")
+    log.close()
+    #log_info(message.guild,message.channel,message.author,message.content)
+
+def log_system(message):
+    r_time = time.strftime('%Y-%m-%d %p %I:%M:%S', time.localtime(time.time()))
+    print(f"[{r_time}]: {message}")
+    log = open(f"{directory}/Log/system.txt","a",encoding = 'utf-8')
+    log.write(f"[{r_time}]: {message}\n")
+    log.close()
+
+def log_error(message):
+    r_time = time.strftime('%Y-%m-%d %p %I:%M:%S', time.localtime(time.time()))
+    print(f"[{r_time}]: {message}")
+    log = open(f"{directory}/Log/error.txt","a",encoding = 'utf-8')
+    log.write(f"[{r_time}]: {message}\n")
+    log.close()
+
 def get_voice(message):
     count = len(client.voice_clients)
     for i in range(count):
@@ -42,13 +80,6 @@ def get_voice(message):
         if guildID == message.guild.id:
             return client.voice_clients[i]
     return None
-
-def download(video_id,link):
-    if not os.path.isfile(f'{directory}/{video_id}.mp3'):
-        ydl_opts_cache = ydl_opts
-        ydl_opts_cache['outtmpl'] = f'{directory}/Music_cache/{video_id}.mp3'
-        with youtube_dl.YoutubeDL(ydl_opts_cache) as ydl:
-            ydl.download([link])
 
 def f_thumbnail(video):
     try:
@@ -61,6 +92,13 @@ def f_thumbnail(video):
     finally:
         return thumbnail
 
+async def download(video_id,link):
+    if not os.path.isfile(f'{directory}/{video_id}.mp3'):
+        ydl_opts_cache = ydl_opts
+        ydl_opts_cache['outtmpl'] = f'{directory}/Music_cache/{video_id}.mp3'
+        with youtube_dl.YoutubeDL(ydl_opts_cache) as ydl:
+            ydl.download([link])
+
 async def playlist(voiceC,playlistId,author):
     params = {
         "part":"snippet",
@@ -72,7 +110,7 @@ async def playlist(voiceC,playlistId,author):
             video_id = i['snippet']['resourceId']['videoId']
             title = i['snippet']['title']
             thumbnail = f_thumbnail(i)
-            download(video_id,f'https://www.youtube.com/watch?v={video_id}')
+            await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
     async with aiohttp.ClientSession() as session:
         async with session.get(f"https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
@@ -87,10 +125,10 @@ async def playlist(voiceC,playlistId,author):
 
 @client.event
 async def on_ready(): 
-    print("디스코드 봇 로그인이 완료되었습니다.")
-    print("디스코드봇 이름:" + client.user.name)
-    print("디스코드봇 ID:" + str(client.user.id))
-    print("디스코드봇 버전:" + str(discord.__version__))
+    log_system("디스코드 봇 로그인이 완료되었습니다.")
+    log_system("디스코드봇 이름:" + client.user.name)
+    log_system("디스코드봇 ID:" + str(client.user.id))
+    log_system("디스코드봇 버전:" + str(discord.__version__))
     print('------')
     
     answer = ""
@@ -98,7 +136,7 @@ async def on_ready():
     for i in range(len(client.guilds)):
         answer = answer + str(i+1) + "번째: " + str(client.guilds[i]) + "(" + str(client.guilds[i].id) + "):"+ str(len(client.guilds[i].members)) +"명\n"
         total += len(client.guilds[i].members)
-    print(f"방목록: \n{answer}\n방의 종합 멤버:{total}명")
+    log_system(f"방목록: \n{answer}\n방의 종합 멤버:{total}명")
 
     await client.change_presence(status=discord.Status.online, activity=discord.Game("노래를 듣고싶다고? $도움를 입력하세요!"))
  
@@ -108,6 +146,7 @@ async def on_message(message):
     list_message = message.content.split(' ')
     prefix = '$'
     if message.content == f'{prefix}도움' or message.content == f'{prefix}도움말' or message.content == f'{prefix}help' or message.content == f'{prefix}명령어':
+        log_info(message.guild,message.channel,message.author,message.content)
         embed = discord.Embed(color=0x0080ff)
         embed.set_author(icon_url=client.user.avatar_url,name='Music Bot')
         embed.add_field(name=f'음악',value='join,leave,play,skip,volume,pause,resume')
@@ -115,6 +154,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}join':
+        log_info(message.guild,message.channel,message.author,message.content)
         if message.author.voice == None:
             embed = discord.Embed(title="MusicBot!",description=f"음성방에 들어가주세요!", color=0xaa0000)
             await message.channel.send(embed=embed)
@@ -126,6 +166,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}debug':
+        log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None:
             embed = discord.Embed(title="MusicBot!",description=f"None", color=0x0080ff)
@@ -139,6 +180,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}leave':
+        log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
             embed = discord.Embed(title="MusicBot!",description=f"음성채널방에 들어가있지 않습니다.", color=0xaa0000)
@@ -149,6 +191,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         return
     if message.content.startswith(f'{prefix}play'):
+        log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
             embed = discord.Embed(title="MusicBot!",description=f"음성채널방에 들어가있지 않습니다.", color=0xaa0000)
@@ -189,7 +232,9 @@ async def on_message(message):
             title = video['snippet']['title']
             thumbnail = f_thumbnail(video)
             author = message.author
-            download(video_id,f'https://www.youtube.com/watch?v={video_id}')
+            await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
-        
+        if not voiceC.is_playing():
+            m_play()
+
 client.run(token)
