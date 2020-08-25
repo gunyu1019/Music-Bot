@@ -36,6 +36,11 @@ ydl_opts  = {
     'format': 'bestaudio/bestaudio'
 }
 
+#voice_setting = {
+#   repeat
+#   shuffle
+#}
+
 def is_manager(user_id):
     file = open(directory + "/Setting/Manager.txt",mode='r')
     cache1 = file.readlines()
@@ -93,11 +98,22 @@ def f_thumbnail(video):
         return thumbnail
 
 async def download(video_id,link):
-    if not os.path.isfile(f'{directory}/{video_id}.mp3'):
+    if not os.path.isfile(f'{directory}/Music_cache/{video_id}.mp3'):
         ydl_opts_cache = ydl_opts
         ydl_opts_cache['outtmpl'] = f'{directory}/Music_cache/{video_id}.mp3'
         with youtube_dl.YoutubeDL(ydl_opts_cache) as ydl:
             ydl.download([link])
+
+async def m_play(message,voiceC):
+    while not len(voice_channels[voiceC]) == 0:
+        file = f'{directory}/Music_cache/{voice_channels[voiceC][0][0]}.mp3'
+        embed = discord.Embed(title="Play!",description=f"[{voice_channels[voiceC][0][1]}](https://www.youtube.com/watch?v={voice_channels[voiceC][0][0]})를 재생합니다.", color=0x0080ff)
+        embed.set_thumbnail(url=voice_channels[voiceC][0][3])
+        embed.set_footer(text=f'{voice_channels[voiceC][0][2]}가 신청한 노래입니다.',icon_url=voice_channels[voiceC][0][2].avatar_url)
+        await message.channel.send(embed=embed)
+        music_file = discord.FFmpegOpusAudio(file, bitrate=320)
+        voiceC.play(music_file)
+        del(voice_channels[voiceC][0])
 
 async def playlist(voiceC,playlistId,author):
     params = {
@@ -105,7 +121,7 @@ async def playlist(voiceC,playlistId,author):
         "key":key,
         "playlistId":playlistId
     }
-    def append_channel(html,author):
+    async def append_channel(html,author):
         for i in html['items']:
             video_id = i['snippet']['resourceId']['videoId']
             title = i['snippet']['title']
@@ -115,13 +131,13 @@ async def playlist(voiceC,playlistId,author):
     async with aiohttp.ClientSession() as session:
         async with session.get(f"https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
             html = await resp.json()
-    append_channel(html,author)
+    await append_channel(html,author)
     while "nextPageToken" in html:
         params['pageToken'] = html['nextPageToken']
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
                 html = await resp.json()
-        append_channel(html,author)
+        await append_channel(html,author)
 
 @client.event
 async def on_ready(): 
@@ -235,6 +251,6 @@ async def on_message(message):
             await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
         if not voiceC.is_playing():
-            m_play()
+            await m_play(message,voiceC)
 
 client.run(token)
