@@ -8,6 +8,7 @@ import youtube_dl
 import pymysql
 
 from bs4 import BeautifulSoup
+from urllib import parse 
 
 directory = os.path.dirname(os.path.abspath(__file__)).replace("\\","/")
 db_f = open(directory + "/Data/bot_info.json",mode='r')
@@ -43,8 +44,11 @@ def get_voice(message):
             return client.voice_clients[i]
     return None
 
-async def music(message,client):
-    return
+def download(video_id,link):
+    ydl_opts_cache = ydl_opts
+    ydl_opts_cache['outtmpl'] = f'{directory}/{video_id}.mp3'
+    with youtube_dl.YoutubeDL(ydl_opts_cache) as ydl:
+        ydl.download([link])
 
 @client.event
 async def on_ready(): 
@@ -120,13 +124,18 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         music = " ".join(list_message[1:])
+        url_T = parse.urlparse(music)
+        if not (url_T.netloc.endswith('youtube.com')):
+            for i in url_T.query.split('&'):
+                if i.startswith('list='):
+                    music = music.replace(i,'')
         params = {
             "part":"snippet",
             "type":"vidoe",
             "maxResults":1,
             "key":key,
             "q":music
-        }
+         }
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://www.googleapis.com/youtube/v3/search",params=params) as resp:
                 html = await resp.json()
@@ -134,10 +143,19 @@ async def on_message(message):
             embed = discord.Embed(title="MusicBot!",description=f"검색결과가 없습니다..", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
-        video_id = html['items'][0]['id']['videoId']
-        title = html['items'][0]['id']['snippet']['title']
-        cache = ydl_opts
-        cache['outtmpl'] = f'{directory}/{video_id}.mp3'
-        link = f'https://www.youtube.com/watch?v={video_id}'
+        video = html['items'][0]
+        video_id = video['id']['videoId']
+        title = video['snippet']['title']
+        try:
+            thumbnail = video['snippet']['thumbnails']['default']['url']
+        except KeyError:
+            try:
+                thumbnail = video['snippet']['thumbnails']['high']['url']
+            except KeyError:
+                thumbnail = video['snippet']['thumbnails']['medium']['url']
+        if not os.path.isfile(f'{directory}/{video_id}.mp3'):
+            download(video_id,f'https://www.youtube.com/watch?v={video_id}')
+        
+        
                 
 client.run(token)
