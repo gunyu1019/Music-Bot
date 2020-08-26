@@ -36,10 +36,6 @@ voice_setting = {}
 ydl_opts  = {
     'format': 'bestaudio/bestaudio'
 }
-#voice_setting = {
-#   repeat
-#   shuffle
-#}
 
 def is_manager(user_id):
     file = open(directory + "/Setting/Manager.txt",mode='r')
@@ -394,7 +390,7 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         async def pg_queue(message,client,voiceC,queue_page):
-            answer = '```c\n'
+            answer = '```css\n'
             if len(voice_channels[voiceC])%5 == 0:
                 m_page = len(voice_channels[voiceC])/5
             else:
@@ -405,7 +401,7 @@ async def on_message(message):
                 load = len(voice_channels[voiceC]) - queue_page*5
                 c = voice_channels[voiceC][queue_page*5:queue_page*5+load]
             for i in c: #(video_id,title,author,thumbnail)
-                answer += f'[{voice_channels[voiceC].index(i)}]: {i[1]} - {i[2]}\n'
+                answer += f'[{voice_channels[voiceC].index(i) + 1}]: {i[1]} - {i[2]}\n'
             answer += '```'
             embed = discord.Embed(title="List!",description=f"{answer}", color=0x0080ff)
             embed.set_footer(text=f"{queue_page+1}/{int(m_page)}페이지")
