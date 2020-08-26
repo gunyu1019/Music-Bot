@@ -199,7 +199,8 @@ async def on_message(message):
             "repeat": False,
             "volume": 100
         }
-        embed = discord.Embed(title="MusicBot!",description=f"{voice.channel}에 성공적으로 연결하였습니다!", color=0x0080ff)
+        embed = discord.Embed(description=f"{voice.channel}에 성공적으로 연결하였습니다!", color=0x0080ff)
+        embed.set_author(name="Join",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}debug':
@@ -228,7 +229,8 @@ async def on_message(message):
         del voice_channels[voiceC]
         del voice_setting[voiceC]
         await voiceC.disconnect()
-        embed = discord.Embed(title="MusicBot!",description=f"{voiceC.channel}에 성공적으로 떠났습니다!", color=0x0080ff)
+        embed = discord.Embed(description=f"{voiceC.channel}에 성공적으로 떠났습니다!", color=0x0080ff)
+        embed.set_author(name="Leave",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content.startswith(f'{prefix}play'):
@@ -275,7 +277,8 @@ async def on_message(message):
             author = message.author
             await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
-            embed = discord.Embed(title="MusicBot!",description=f"[{title}](https://www.youtube.com/watch?v={video_id})가 정상적으로 추가되었습니다.", color=0x0080ff)
+            embed = discord.Embed(description=f"[{title}](https://www.youtube.com/watch?v={video_id})가 정상적으로 추가되었습니다.", color=0x0080ff)
+            embed.set_author(name="Play",icon_url=client.user.avatar_url)
             embed.set_footer(text=f'{author}가 등록하였습니다.',icon_url=author.avatar_url)
             await message.channel.send(embed=embed)
         if not voiceC.is_playing():
@@ -288,7 +291,8 @@ async def on_message(message):
             embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
-        embed = discord.Embed(title="Skip!",description="음악을 스킵합니다.", color=0x0080ff)
+        embed = discord.Embed(description="음악을 스킵합니다.", color=0x0080ff)
+        embed.set_author(name="Skip",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         voiceC.stop()
         return
@@ -299,7 +303,8 @@ async def on_message(message):
             embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
             await message.channel.send(embed=embed)
             return
-        embed = discord.Embed(title="Stop!",description="재생을 멈춥니다!", color=0x0080ff)
+        embed = discord.Embed(description="재생을 멈춥니다!", color=0x0080ff)
+        embed.set_author(name="Stop",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         voice_channels[voiceC] = []
         voiceC.stop()
@@ -312,11 +317,13 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         if voice_setting[voiceC]["shuffle"]:
-            embed = discord.Embed(title="Shuffle!",description="다시 정리...셔플모드를 끕니다.", color=0x0080ff)
+            embed = discord.Embed(description="다시 정리...셔플모드를 끕니다.", color=0x0080ff)
+            embed.set_author(name="Shuffle",icon_url=client.user.avatar_url)
             await message.channel.send(embed=embed)
             voice_setting[voiceC]["shuffle"] = False
         else:
-            embed = discord.Embed(title="Shuffle!",description="재생목록을 흔들어! 흔들어! 셔플모드를 켭니다.", color=0x0080ff)
+            embed = discord.Embed(description="재생목록을 흔들어! 흔들어! 셔플모드를 켭니다.", color=0x0080ff)
+            embed.set_author(name="Shuffle",icon_url=client.user.avatar_url)
             await message.channel.send(embed=embed)
             voice_setting[voiceC]["shuffle"] = True
         return
@@ -328,11 +335,13 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         if voice_setting[voiceC]["repeat"]:
-            embed = discord.Embed(title="Repeat!",description="무한반복!~~ 반복재생을 끕니다.", color=0x0080ff)
+            embed = discord.Embed(description="무한반복!~~ 반복재생을 끕니다.", color=0x0080ff)
+            embed.set_author(name="Repeat",icon_url=client.user.avatar_url)
             await message.channel.send(embed=embed)
             voice_setting[voiceC]["repeat"] = False
         else:
-            embed = discord.Embed(title="Repeat!",description="반복재생을 켭니다.", color=0x0080ff)
+            embed = discord.Embed(description="반복재생을 켭니다.", color=0x0080ff)
+            embed.set_author(name="Repeat",icon_url=client.user.avatar_url)
             await message.channel.send(embed=embed)
             voice_setting[voiceC]["repeat"] = True
         return
@@ -344,7 +353,8 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         voiceC.pause()
-        embed = discord.Embed(title="Pause!",description="잠시중지! 음악을 일시 정지합니다.", color=0x0080ff)
+        embed = discord.Embed(description="잠시중지! 음악을 일시 정지합니다.", color=0x0080ff)
+        embed.set_author(name="Pause",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}resume':
@@ -355,7 +365,8 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         voiceC.resume()
-        embed = discord.Embed(title="Resume!",description="다시 재생! 일시 정지를 해제합니다..", color=0x0080ff)
+        embed = discord.Embed(description="다시 재생! 일시 정지를 해제합니다..", color=0x0080ff)
+        embed.set_author(name="Resume",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content.startswith(f'{prefix}volume'):
@@ -366,7 +377,8 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         if len(list_message) < 2:
-            embed = discord.Embed(title="Volume!",description=f"볼륨값은 {voice_setting[voiceC]['volume']}%입니다.", color=0x0080ff)
+            embed = discord.Embed(description=f"볼륨값은 {voice_setting[voiceC]['volume']}%입니다.", color=0x0080ff)
+            embed.set_author(name="Volume",icon_url=client.user.avatar_url)
             await message.channel.send(embed=embed)
             return
         try:
@@ -377,9 +389,10 @@ async def on_message(message):
             return
         voice_setting[voiceC]["volume"] = vol_num
         if voiceC.is_playing():
-            embed = discord.Embed(title="Volume!",description=f"볼륨값을 {vol_num}%으로 설정하였습니다.\n**[주의]:** 볼륨값은 다음 곡부터 적용됩니다.", color=0x0080ff)
+            embed = discord.Embed(description=f"볼륨값을 {vol_num}%으로 설정하였습니다.\n**[주의]:** 볼륨값은 다음 곡부터 적용됩니다.", color=0x0080ff)
         else:
-            embed = discord.Embed(title="Volume!",description=f"볼륨값을 {vol_num}%으로 설정하였습니다.", color=0x0080ff)
+            embed = discord.Embed(description=f"볼륨값을 {vol_num}%으로 설정하였습니다.", color=0x0080ff)
+        embed.set_author(name="Volume",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}queue':
@@ -403,7 +416,8 @@ async def on_message(message):
             for i in c: #(video_id,title,author,thumbnail)
                 answer += f'[{voice_channels[voiceC].index(i) + 1}]: {i[1]} - {i[2]}\n'
             answer += '```'
-            embed = discord.Embed(title="List!",description=f"{answer}", color=0x0080ff)
+            embed = discord.Embed(description=f"{answer}", color=0x0080ff)
+            embed.set_author(name="Queue",icon_url=client.user.avatar_url)
             embed.set_footer(text=f"{queue_page+1}/{int(m_page)}페이지")
             msg = await message.channel.send(embed=embed)
             if not queue_page == 0:
