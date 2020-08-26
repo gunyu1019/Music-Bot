@@ -470,5 +470,6 @@ async def on_message(message):
             return
         await pg_queue(message,client,voiceC,0)
         return
+    return
 
 client.run(token)
