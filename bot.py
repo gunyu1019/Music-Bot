@@ -119,7 +119,7 @@ async def m_play(message,voiceC):
         embed.set_thumbnail(url=voice_channels[voiceC][play_num][3])
         embed.set_footer(text=f'{voice_channels[voiceC][play_num][2]}가 신청한 노래입니다.',icon_url=voice_channels[voiceC][play_num][2].avatar_url)
         await message.channel.send(embed=embed)
-        music_file = discord.FFmpegOpusAudio(file, bitrate=voiceC.channel.bitrate/1000)
+        music_file = discord.FFmpegOpusAudio(file, bitrate=voiceC.channel.bitrate/1000,options=f'-af "volume={voice_setting[voiceC]["volume"]/100}"')
         voiceC.play(music_file) #-> 버그, 여기서 플레이가 끝날때까지 기달려야됨.
         while voiceC.is_playing(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
             await asyncio.sleep(0.01)
@@ -285,7 +285,7 @@ async def on_message(message):
         if not voiceC.is_playing():
             await m_play(message,voiceC)
         return
-    if message.content.startswith(f'{prefix}skip'):
+    if message.content == f'{prefix}skip':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
@@ -296,7 +296,7 @@ async def on_message(message):
         await message.channel.send(embed=embed)
         voiceC.stop()
         return
-    if message.content.startswith(f'{prefix}stop'):
+    if message.content == f'{prefix}stop':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
@@ -308,7 +308,7 @@ async def on_message(message):
         voice_channels[voiceC] = []
         voiceC.stop()
         return
-    if message.content.startswith(f'{prefix}shuffle'):
+    if message.content == f'{prefix}shuffle':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
@@ -324,7 +324,7 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             voice_setting[voiceC]["shuffle"] = True
         return
-    if message.content.startswith(f'{prefix}repeat'):
+    if message.content == f'{prefix}repeat':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
@@ -340,7 +340,7 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             voice_setting[voiceC]["repeat"] = True
         return
-    if message.content.startswith(f'{prefix}pause'):
+    if message.content == f'{prefix}pause':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
@@ -351,7 +351,7 @@ async def on_message(message):
         embed = discord.Embed(title="Pause!",description="잠시중지! 음악을 일시 정지합니다.", color=0x0080ff)
         await message.channel.send(embed=embed)
         return
-    if message.content.startswith(f'{prefix}resume'):
+    if message.content == f'{prefix}resume':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
         if voiceC == None or not voiceC in voice_channels:
@@ -362,6 +362,27 @@ async def on_message(message):
         embed = discord.Embed(title="Resume!",description="다시 재생! 일시 정지를 해제합니다..", color=0x0080ff)
         await message.channel.send(embed=embed)
         return
-    
+    if message.content.startswith(f'{prefix}volume'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        voiceC = get_voice(message)
+        if voiceC == None or not voiceC in voice_channels:
+            embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        if len(list_message) < 2:
+            embed = discord.Embed(title="Volume!",description=f"볼륨값은 {voice_setting[voiceC]["volume"]}%입니다.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        try:
+            vol_num = int(" ".join(list_message[1:]))
+        except ValueError:
+            embed = discord.Embed(title="MusicBot!",description="옳바른 숫자값을 입력해주세요.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        voice_setting[voiceC]["volume"] = vol_num
+        embed = discord.Embed(title="Volume!",description=f"볼륨값을 {vol_num}%으로 설정하였습니다.", color=0xaa0000)
+        await message.channel.send(embed=embed)
+        return
+
 
 client.run(token)
