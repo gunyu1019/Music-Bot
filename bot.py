@@ -8,6 +8,7 @@ import youtube_dl
 import pymysql
 import time
 import random
+import datetime
 
 from urllib import parse 
 
@@ -176,13 +177,36 @@ async def on_ready():
 async def on_message(message):
     author_id = message.author.mention.replace("<@","",).replace(">","").replace("!","")
     list_message = message.content.split(' ')
-    prefix = '$'
+    prefix = '%'
     if message.content == f'{prefix}도움' or message.content == f'{prefix}도움말' or message.content == f'{prefix}help' or message.content == f'{prefix}명령어':
         log_info(message.guild,message.channel,message.author,message.content)
         embed = discord.Embed(color=0x0080ff)
         embed.set_author(icon_url=client.user.avatar_url,name='Music Bot')
-        embed.add_field(name='음악',value='join,leave,play,skip,volume,pause,resume')
-        embed.add_field(name='관리',value='help,ping')
+        embed.add_field(name='음악',value='join,leave,play,skip,volume,pause,resume,shuffle,repeat,volume',inline=False)
+        embed.add_field(name='관리',value='help,ping,information',inline=False)
+        await message.channel.send(embed=embed)
+        return
+    if message.content == f'{prefix}ping':
+        now = datetime.datetime.utcnow()
+        embed = discord.Embed(title="Pong!", color=0x0080ff)
+        msg = await message.channel.send(embed=embed)
+        message_ping_c = msg.created_at - now
+        message_ping = float(f'{message_ping_c.seconds}.{message_ping_c.microseconds}')
+        embed = discord.Embed(title="Pong!",description=f"클라이언트 핑: {round(client.latency * 1000,2)}ms\n응답속도: {round(message_ping * 1000,2)}ms", color=0x0080ff)
+        await msg.edit(embed=embed)
+        return
+    if message.content.startswith(f'{prefix}information'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        total = 0
+        for i in client.guilds:
+            total += len(i.members)
+        embed = discord.Embed(title='Music Bot', color=0x00aaaa)
+        embed.add_field(name='제작자',value='건유1019#0001',inline=True)
+        embed.add_field(name='깃허브',value='[링크](https://github.com/gunyu1019/Music-Bot)',inline=True)
+        embed.add_field(name='<:user:735138021850087476>서버수/유저수',value=f'{len(client.guilds)}서버/{total}명',inline=True)
+        embed.add_field(name='<:discord:735135879990870086>discord.py',value=f'v{discord.__version__}',inline=True)
+        embed.add_field(name='<:aiohttp:735135879634616351>aiohttp',value=f'v{aiohttp.__version__}',inline=True)
+        embed.set_thumbnail(url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}join':
@@ -413,10 +437,18 @@ async def on_message(message):
             else:
                 load = len(voice_channels[voiceC]) - queue_page*5
                 c = voice_channels[voiceC][queue_page*5:queue_page*5+load]
-            for i in c: #(video_id,title,author,thumbnail)
-                answer += f'[{voice_channels[voiceC].index(i) + 1}]: {i[1]} - {i[2]}\n'
+            for i in c:
+                answer += f'[{voice_channels[voiceC].index(i) + 1}]: {i[1]}\n'
             answer += '```'
-            embed = discord.Embed(description=f"{answer}", color=0x0080ff)
+            if voice_setting[voiceC]["repeat"]:
+                o1 = "켜짐"
+            else:
+                o1 = "꺼짐"
+            if voice_setting[voiceC]["shuffle"]:
+                o2 = "켜짐"
+            else:
+                o2 = "꺼짐"
+            embed = discord.Embed(description=f"{answer}\n반복:{o1}, 셔플: {o2}", color=0x0080ff)
             embed.set_author(name="Queue",icon_url=client.user.avatar_url)
             embed.set_footer(text=f"{queue_page+1}/{int(m_page)}페이지")
             msg = await message.channel.send(embed=embed)
