@@ -1,4 +1,5 @@
 import discord
+import asyncio
 import aiohttp
 
 import os
@@ -103,21 +104,20 @@ async def download(video_id,link):
             ydl.download([link])
 
 async def m_play(message,voiceC):
-    global voice_channels
     while not len(voice_channels[voiceC]) == 0:
-        print(voice_channels)
         #만약에 셔플을 넣는다면 여기서 0이 아닌 len 내로 랜덤으로 지칭해 재생.
         file = f'{directory}/Music_cache/{voice_channels[voiceC][0][0]}.mp3'
         embed = discord.Embed(title="Play!",description=f"{voiceC.channel.name}에서 [{voice_channels[voiceC][0][1]}](https://www.youtube.com/watch?v={voice_channels[voiceC][0][0]})를 재생합니다.", color=0x0080ff)
         embed.set_thumbnail(url=voice_channels[voiceC][0][3])
         embed.set_footer(text=f'{voice_channels[voiceC][0][2]}가 신청한 노래입니다.',icon_url=voice_channels[voiceC][0][2].avatar_url)
         await message.channel.send(embed=embed)
-        music_file = discord.FFmpegOpusAudio(file, bitrate=320)
+        music_file = discord.FFmpegOpusAudio(file, bitrate=voiceC.channel.bitrate/1000)
         voiceC.play(music_file) #-> 버그, 여기서 플레이가 끝날때까지 기달려야됨.
         while voiceC.is_playing(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
         #만약에 반복을 넣는 다면 del을 작동하되, 맨 끝에 똑같은 값을 재 대입시킴.
-        del voice_channels[voiceC][0]
+        if len(voice_channels[voiceC]) != 0:
+            del voice_channels[voiceC][0]
 
 async def playlist(voiceC,playlistId,author):
     params = {
@@ -142,6 +142,13 @@ async def playlist(voiceC,playlistId,author):
             async with session.get(f"https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
                 html = await resp.json()
         await append_channel(html,author)
+
+@client.event
+async def on_voice_state_update(member,before,after):
+    if member.id == 746895766684958820:
+        if after == None:
+            del voice_channels[before]
+    return
 
 @client.event
 async def on_ready(): 
@@ -182,6 +189,10 @@ async def on_message(message):
         channel = message.author.voice.channel
         voice = await channel.connect()
         voice_channels[voice] = []
+        voice_setting[voice] = {
+            "shuffle": False,
+            "repeat": False
+        }
         embed = discord.Embed(title="MusicBot!",description=f"{voice.channel}에 성공적으로 연결하였습니다!", color=0x0080ff)
         await message.channel.send(embed=embed)
         return
@@ -193,7 +204,9 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         elif voiceC in voice_channels:
-            embed = discord.Embed(title="MusicBot!",description=f"{voiceC.channel.name}({voiceC.channel.id}):{voice_channels[voiceC]}", color=0x0080ff)
+            embed = discord.Embed(title=f"{voiceC.channel.name}({voiceC.channel.id})", color=0x0080ff)
+            embed.add_field(name='재생목록: ',value=f'{voice_channels[voiceC]}')
+            embed.add_field(name='설정: ',value=f'{voice_setting[voiceC]}')
             await message.channel.send(embed=embed)
             return
         embed = discord.Embed(title="MusicBot!",description=f"None", color=0x0080ff)
@@ -207,6 +220,7 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         del voice_channels[voiceC]
+        del voice_setting[voiceC]
         await voiceC.disconnect()
         embed = discord.Embed(title="MusicBot!",description=f"{voiceC.channel}에 성공적으로 떠났습니다!", color=0x0080ff)
         await message.channel.send(embed=embed)
@@ -260,5 +274,29 @@ async def on_message(message):
             await message.channel.send(embed=embed)
         if not voiceC.is_playing():
             await m_play(message,voiceC)
+        return
+    if message.content.startswith(f'{prefix}skip'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        voiceC = get_voice(message)
+        if voiceC == None or not voiceC in voice_channels:
+            embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        embed = discord.Embed(title="Skip!",description="음악을 스킵합니다.", color=0x0080ff)
+        await message.channel.send(embed=embed)
+        voiceC.stop()
+        return
+    if message.content.startswith(f'{prefix}stop'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        voiceC = get_voice(message)
+        if voiceC == None or not voiceC in voice_channels:
+            embed = discord.Embed(title="Stop!",description="재생을 멈춥니다!", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        embed = discord.Embed(title="Stop!",description="재생을 멈춥니다!", color=0x0080ff)
+        await message.channel.send(embed=embed)
+        voice_channels[voiceC] = []
+        voiceC.stop()
+        return
 
 client.run(token)
