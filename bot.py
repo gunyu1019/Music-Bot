@@ -121,7 +121,7 @@ async def m_play(message,voiceC):
         await message.channel.send(embed=embed)
         music_file = discord.FFmpegOpusAudio(file, bitrate=voiceC.channel.bitrate/1000,options=f'-af "volume={voice_setting[voiceC]["volume"]/100}"')
         voiceC.play(music_file) #-> 버그, 여기서 플레이가 끝날때까지 기달려야됨.
-        while voiceC.is_playing(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
+        while voiceC.is_playing() or voiceC.is_paused(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
             await asyncio.sleep(0.01)
         if len(voice_channels[voiceC]) != 0:
             if voice_setting[voiceC]["repeat"]: #반복
@@ -370,7 +370,7 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         if len(list_message) < 2:
-            embed = discord.Embed(title="Volume!",description=f"볼륨값은 {voice_setting[voiceC]["volume"]}%입니다.", color=0xaa0000)
+            embed = discord.Embed(title="Volume!",description=f"볼륨값은 {voice_setting[voiceC]['volume']}%입니다.", color=0x0080ff)
             await message.channel.send(embed=embed)
             return
         try:
@@ -380,8 +380,53 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
         voice_setting[voiceC]["volume"] = vol_num
-        embed = discord.Embed(title="Volume!",description=f"볼륨값을 {vol_num}%으로 설정하였습니다.", color=0xaa0000)
+        if voiceC.is_playing():
+            embed = discord.Embed(title="Volume!",description=f"볼륨값을 {vol_num}%으로 설정하였습니다.\n**[주의]:** 볼륨값은 다음 곡부터 적용됩니다.", color=0x0080ff)
+        else:
+            embed = discord.Embed(title="Volume!",description=f"볼륨값을 {vol_num}%으로 설정하였습니다.", color=0x0080ff)
         await message.channel.send(embed=embed)
+        return
+    if message.content == f'{prefix}queue':
+        log_info(message.guild,message.channel,message.author,message.content)
+        voiceC = get_voice(message)
+        if voiceC == None or not voiceC in voice_channels:
+            embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        async def pg_queue(message,client,voiceC,queue_page):
+            answer = '```c\n'
+            if len(voice_channels[voiceC])%5 == 0:
+                m_page = len(voice_channels[voiceC])/5
+            else:
+                m_page = len(voice_channels[voiceC])/5 + 1
+            if len(voice_channels[voiceC]) - queue_page*5 > 5:
+                c = voice_channels[voiceC][queue_page*5:queue_page*5+5]
+            else:
+                load = len(voice_channels[voiceC]) - queue_page*5
+                c = voice_channels[voiceC][queue_page*5:queue_page*5+load]
+            for i in c: #(video_id,title,author,thumbnail)
+                answer += f'[{voice_channels[voiceC].index(i)}]: {i[1]} - {i[2]}\n'
+            answer += '```'
+            embed = discord.Embed(title="List!",description=f"{answer}", color=0x0080ff)
+            embed.set_footer(text=f"{queue_page+1}/{int(m_page)}페이지")
+            msg = await message.channel.send(embed=embed)
+            if not queue_page == 0:
+                await msg.add_reaction("\U00002B05")
+            if not queue_page + 1 == int(m_page):
+                await msg.add_reaction("\U000027A1")
+            message_id = msg.id
+            def check(reaction, user):
+                if "\U000027A1" == reaction.emoji or "\U00002B05" == reaction.emoji:
+                    return user.id == message.author.id and message_id == reaction.message.id
+            reaction,_ = await client.wait_for('reaction_add', check=check)
+            if reaction.emoji == "\U000027A1":
+                await msg.delete()
+                await pg_queue(message,client,voiceC,queue_page+1)
+            elif reaction.emoji == "\U00002B05":
+                await msg.delete()
+                await pg_queue(message,client,voiceC,queue_page-1)
+            return
+        await pg_queue(message,client,voiceC,0)
         return
 
 
