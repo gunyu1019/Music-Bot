@@ -389,6 +389,9 @@ async def on_message(message):
                     if i.startswith('v='):
                         await get_vid(voiceC, i.split('v=')[1],message)
                         video_id_bool = True
+        if url_T.netloc.endswith('youtu.be') and url_T.path.startswith('/'):
+            await get_vid(voiceC, i.split('/')[1],message)
+            video_id_bool = True
         if not (playlist_bool or video_id_bool):
             params = {
                 "part":"snippet",
