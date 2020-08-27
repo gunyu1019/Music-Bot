@@ -159,6 +159,19 @@ async def m_play(message,voiceC):
                 voice_channels[voiceC].append(voice_channels[voiceC][play_num])
             del voice_channels[voiceC][play_num]
 
+async def add_queue(message,html,count,voiceC):
+    video = html['items'][count]
+    video_id = video['id']
+    title = video['snippet']['title']
+    thumbnail = f_thumbnail(video)
+    author = message.author
+    await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
+    voice_channels[voiceC].append((video_id,title,author,thumbnail))
+    embed = discord.Embed(description=f"[{title}](https://www.youtube.com/watch?v={video_id})가 정상적으로 추가되었습니다.", color=0x0080ff)
+    embed.set_author(name="Play",icon_url=client.user.avatar_url)
+    embed.set_footer(text=f'{author}가 등록하였습니다.',icon_url=author.avatar_url)
+    await message.channel.send(embed=embed)
+
 async def get_playlist(voiceC,playlistId,author):
     params = {
         "part":"snippet",
@@ -183,12 +196,30 @@ async def get_playlist(voiceC,playlistId,author):
                 html = await resp.json()
         await append_channel(html,author)
 
-async def get_vid(voiceC,vid,author):
+async def get_vid(voiceC,vid,message):
     params = {
         "part":"snippet",
         "maxResults":1,
         "key":key,
         "id":vid
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.get("https://www.googleapis.com/youtube/v3/videos",params=params) as resp:
+            html = await resp.json()
+    if len(html['items']) == 0:
+        embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
+        await message.channel.send(embed=embed)
+        return
+    await add_queue(message,html,0,voiceC)
+    return
+
+async def get_search(voiceC,message):
+    params = {
+        "part":"snippet",
+        "type":"vidoe",
+        "maxResults":1,
+        "key":key,
+        "q":music
     }
     async with aiohttp.ClientSession() as session:
         async with session.get("https://www.googleapis.com/youtube/v3/search",params=params) as resp:
@@ -197,17 +228,8 @@ async def get_vid(voiceC,vid,author):
         embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
         await message.channel.send(embed=embed)
         return
-    video = html['items'][0]
-    video_id = video['id']['videoId']
-    title = video['snippet']['title']
-    thumbnail = f_thumbnail(video)
-    author = message.author
-    await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
-    voice_channels[voiceC].append((video_id,title,author,thumbnail))
-    embed = discord.Embed(description=f"[{title}](https://www.youtube.com/watch?v={video_id})가 정상적으로 추가되었습니다.", color=0x0080ff)
-    embed.set_author(name="Play",icon_url=client.user.avatar_url)
-    embed.set_footer(text=f'{author}가 등록하였습니다.',icon_url=author.avatar_url)
-    await message.channel.send(embed=embed)
+    await add_queue(message,html,0,voiceC)
+    return
 
 @client.event
 async def on_voice_state_update(member,before,after):
@@ -362,9 +384,11 @@ async def on_message(message):
                     music = music.replace(i,'')
                     await get_playlist(voiceC,i.split('list=')[1],message.author)
                     playlist_bool = True
-            for i in url_T.query.split('&'):
-                if i.startswith('v='):
-                    video_id_bool = True
+            if not playlist_bool:
+                for i in url_T.query.split('&'):
+                    if i.startswith('v='):
+                        await get_vid(voiceC, i.split('v=')[1],message)
+                        video_id_bool = True
         if not (playlist_bool or video_id_bool):
             params = {
                 "part":"snippet",
