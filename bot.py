@@ -75,7 +75,7 @@ def log_error(message):
     log.write(f"[{r_time}]: {message}\n")
     log.close()
 
-async def check(message,vocieC):
+async def check(message,voiceC):
     if voiceC == None or not voiceC in voice_channels:
         embed = discord.Embed(title="MusicBot!",description="음성채널방에 들어가있지 않습니다.", color=0xaa0000)
         await message.channel.send(embed=embed)
