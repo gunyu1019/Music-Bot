@@ -150,13 +150,13 @@ async def playlist(voiceC,playlistId,author):
             await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
+        async with session.get("https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
             html = await resp.json()
     await append_channel(html,author)
     while "nextPageToken" in html:
         params['pageToken'] = html['nextPageToken']
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
+            async with session.get("https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
                 html = await resp.json()
         await append_channel(html,author)
 
@@ -295,7 +295,7 @@ async def on_message(message):
                 "q":music
             }
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://www.googleapis.com/youtube/v3/search",params=params) as resp:
+                async with session.get("https://www.googleapis.com/youtube/v3/search",params=params) as resp:
                     html = await resp.json()
             if len(html['items']) == 0:
                 embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
