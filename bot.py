@@ -3,12 +3,14 @@ import asyncio
 import aiohttp
 
 import os
+import sys
 import json
 import youtube_dl
 import pymysql
 import time
 import random
 import datetime
+import importlib
 
 from urllib import parse 
 
@@ -38,6 +40,9 @@ ydl_opts  = {
     'format': 'bestaudio/bestaudio'
 }
 
+sys.path.append(directory + "/Module/")
+prefix_m = importlib.import_module('prefix')
+
 def is_manager(user_id):
     file = open(directory + "/Setting/Manager.txt",mode='r')
     cache1 = file.readlines()
@@ -52,6 +57,24 @@ def is_admin(message):
         if message.author.roles[i].permissions.administrator:
             return True
     return False   
+
+def is_banned(user_id,message):
+    connect = pymysql.connect(host=db_ip, user=db_user, password=db_pw,db=db_name, charset='utf8')
+    cur = connect .cursor()
+    sql = "select * from BLACKLIST"
+    cur.execute(sql)
+    banned_list = cur.fetchall()
+    connect.close()
+    for i in range(len(banned_list)):
+        if banned_list[i][0] == int(user_id):
+            if not message.content[1:].startswith("blacklist info"):
+                log_info(message.guild,message.channel,'Blacklist-BOT',str(message.author) + '잘못된 유저가 접근하고 있습니다!(' + message.content + ')')
+                embed = discord.Embed(title="권한 거부(403)", color=0x00aaaa)
+                embed.add_field(name="권한이 거부되었습니다.", value="당신은 블랙리스트로 등록되어 있습니다.", inline=False)
+                coro = message.channel.send(embed=embed)
+                asyncio.run_coroutine_threadsafe(coro, client.loop)
+            return True
+    return False
 
 def log_info(guild, channel, user, message):
     r_time = time.strftime('%Y-%m-%d %p %I:%M:%S', time.localtime(time.time()))
@@ -188,13 +211,27 @@ async def on_ready():
 async def on_message(message):
     author_id = message.author.mention.replace("<@","",).replace(">","").replace("!","")
     list_message = message.content.split(' ')
-    prefix = '%'
+    if message.author == client.user or message.author.bot:
+        return
+    connect = pymysql.connect(host=db_ip, user=db_user, password=db_pw,db=db_name, charset='utf8')
+    try:
+        cur = connect.cursor()
+        sql_prefix = f"select prefix from SERVER_INFO where ID={message.guild.id}"
+        cur.execute(sql_prefix)
+        cache = cur.fetchone()
+        if not cache == None:
+            prefix = cache[0]
+        else:
+            prefix = "%"
+    except:
+        prefix = "%"
+    connect.close()
     if message.content == f'{prefix}도움' or message.content == f'{prefix}도움말' or message.content == f'{prefix}help' or message.content == f'{prefix}명령어':
         log_info(message.guild,message.channel,message.author,message.content)
         embed = discord.Embed(color=0x0080ff)
         embed.set_author(icon_url=client.user.avatar_url,name='Music Bot')
         embed.add_field(name='음악',value='join,leave,play,skip,volume,pause,resume,shuffle,repeat,volume',inline=False)
-        embed.add_field(name='관리',value='help,ping,information',inline=False)
+        embed.add_field(name='관리',value='help,ping,information,blacklist,prefix',inline=False)
         await message.channel.send(embed=embed)
         return
     if message.content == f'{prefix}ping':
@@ -206,7 +243,7 @@ async def on_message(message):
         embed = discord.Embed(title="Pong!",description=f"클라이언트 핑: {round(client.latency * 1000,2)}ms\n응답속도: {round(message_ping * 1000,2)}ms", color=0x0080ff)
         await msg.edit(embed=embed)
         return
-    if message.content.startswith(f'{prefix}information'):
+    if message.content == f'{prefix}information':
         log_info(message.guild,message.channel,message.author,message.content)
         total = 0
         for i in client.guilds:
@@ -238,6 +275,17 @@ async def on_message(message):
         embed.set_author(name="Join",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
+    if message.content.startswith(f'{prefix}prefix') or message.content.startswith('%prefix'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        if is_banned(author_id,message):
+            return
+        if message.guild == None:
+            embed = discord.Embed(title="접두어",description=message.guild.name + "DM에서는 접두어 기능을 사용하실수 없습니다.", color=0x00aaaa)
+            await message.channel.send(embed=embed)
+            return
+        pf = prefix_m.prefix(message,prefix,db_json)
+        await pf.get(directory,client)
+        return
     if message.content == f'{prefix}debug':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
@@ -257,7 +305,7 @@ async def on_message(message):
     if message.content == f'{prefix}leave':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         del voice_channels[voiceC]
         del voice_setting[voiceC]
@@ -269,7 +317,7 @@ async def on_message(message):
     if message.content.startswith(f'{prefix}play'):
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         if len(list_message) < 2:
             embed = discord.Embed(title="MusicBot!",description="URL 혹은 영상 링크를 넣어주세요.", color=0xaa0000)
@@ -318,7 +366,7 @@ async def on_message(message):
     if message.content == f'{prefix}skip':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         embed = discord.Embed(description="음악을 스킵합니다.", color=0x0080ff)
         embed.set_author(name="Skip",icon_url=client.user.avatar_url)
@@ -328,7 +376,7 @@ async def on_message(message):
     if message.content == f'{prefix}stop':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         embed = discord.Embed(description="재생을 멈춥니다!", color=0x0080ff)
         embed.set_author(name="Stop",icon_url=client.user.avatar_url)
@@ -339,7 +387,7 @@ async def on_message(message):
     if message.content == f'{prefix}shuffle':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         if voice_setting[voiceC]["shuffle"]:
             embed = discord.Embed(description="다시 정리...셔플모드를 끕니다.", color=0x0080ff)
@@ -355,7 +403,7 @@ async def on_message(message):
     if message.content == f'{prefix}repeat':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         if voice_setting[voiceC]["repeat"]:
             embed = discord.Embed(description="무한반복!~~ 반복재생을 끕니다.", color=0x0080ff)
@@ -371,7 +419,7 @@ async def on_message(message):
     if message.content == f'{prefix}pause':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         voiceC.pause()
         embed = discord.Embed(description="잠시중지! 음악을 일시 정지합니다.", color=0x0080ff)
@@ -381,7 +429,7 @@ async def on_message(message):
     if message.content == f'{prefix}resume':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         voiceC.resume()
         embed = discord.Embed(description="다시 재생! 일시 정지를 해제합니다..", color=0x0080ff)
@@ -391,7 +439,7 @@ async def on_message(message):
     if message.content.startswith(f'{prefix}volume'):
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         if len(list_message) < 2:
             embed = discord.Embed(description=f"볼륨값은 {voice_setting[voiceC]['volume']}%입니다.", color=0x0080ff)
@@ -415,7 +463,7 @@ async def on_message(message):
     if message.content == f'{prefix}queue':
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
-        if await check(message,voiceC):
+        if await check(message,voiceC) or is_banned(author_id,message):
             return
         async def pg_queue(message,client,voiceC,queue_page):
             answer = '```css\n'
