@@ -29,8 +29,10 @@ connect = pymysql.connect(host=db_ip, user=db_user, password=db_pw,db=db_name, c
 cur = connect.cursor()
 cur.execute("SELECT * from Music_Bot")
 client_list = cur.fetchone()
-key = client_list[0]
-token = client_list[1]
+token = client_list[0]
+key_l = client_list[1:]
+key = key_l[0]
+key_n = 0
 connect.close()
 
 client = discord.Client()
@@ -39,6 +41,10 @@ voice_setting = {}
 ydl_opts  = {
     'format': 'bestaudio/bestaudio'
 }
+
+class API_error(Exception):
+    def __init__(self,msg):
+        super().__init__(msg)
 
 sys.path.append(directory + "/Module/")
 prefix_m = importlib.import_module('prefix')
@@ -172,6 +178,33 @@ async def add_queue(message,html,count,voiceC):
     embed.set_footer(text=f'{author}가 등록하였습니다.',icon_url=author.avatar_url)
     await message.channel.send(embed=embed)
 
+def get_new():
+    global key_n
+    key_n += 1
+    if key_n != len(key_l) - 1:
+        return key_l[key_n]
+    else:
+        return key_l[0]
+
+async def google_api(t,params,count=0):
+    if count == 12:
+        raise API_error('All API quotas were used.')
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://www.googleapis.com/youtube/v3/{t}",params=params) as resp:
+            if resp.status == 200:
+                html = await resp.json()
+            elif resp.status == 403:
+                e_code = await resp.json()
+                for i in e_code['error']['errors']:
+                    if i['reason'] == "quotaExceeded":
+                        global key
+                        key = get_new()
+                        params['key'] = key
+                        await google_api(t,params,count+1)
+            else:
+                html = None
+    return html
+
 async def get_playlist(voiceC,playlistId,author):
     params = {
         "part":"snippet",
@@ -185,15 +218,11 @@ async def get_playlist(voiceC,playlistId,author):
             thumbnail = f_thumbnail(i)
             await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
             voice_channels[voiceC].append((video_id,title,author,thumbnail))
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
-            html = await resp.json()
+    html = await google_api('playlistItems',params)
     await append_channel(html,author)
     while "nextPageToken" in html:
         params['pageToken'] = html['nextPageToken']
-        async with aiohttp.ClientSession() as session:
-            async with session.get("https://www.googleapis.com/youtube/v3/playlistItems",params=params) as resp:
-                html = await resp.json()
+        html = await google_api('playlistItems',params)
         await append_channel(html,author)
 
 async def get_vid(voiceC,vid,message):
@@ -203,9 +232,7 @@ async def get_vid(voiceC,vid,message):
         "key":key,
         "id":vid
     }
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://www.googleapis.com/youtube/v3/videos",params=params) as resp:
-            html = await resp.json()
+    html = await google_api('videos',params)
     if len(html['items']) == 0:
         embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
         await message.channel.send(embed=embed)
@@ -213,7 +240,7 @@ async def get_vid(voiceC,vid,message):
     await add_queue(message,html,0,voiceC)
     return
 
-async def get_search(voiceC,message):
+async def get_search(voiceC,music,message):
     params = {
         "part":"snippet",
         "type":"vidoe",
@@ -221,9 +248,7 @@ async def get_search(voiceC,message):
         "key":key,
         "q":music
     }
-    async with aiohttp.ClientSession() as session:
-        async with session.get("https://www.googleapis.com/youtube/v3/search",params=params) as resp:
-            html = await resp.json()
+    html = await google_api('search',params)
     if len(html['items']) == 0:
         embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
         await message.channel.send(embed=embed)
@@ -253,7 +278,7 @@ async def on_ready():
         total += len(client.guilds[i].members)
     log_system(f"방목록: \n{answer}\n방의 종합 멤버:{total}명")
 
-    await client.change_presence(status=discord.Status.online, activity=discord.Game("노래를 듣고싶다고? $도움를 입력하세요!"))
+    await client.change_presence(status=discord.Status.online, activity=discord.Game("노래를 듣고싶다고? %도움를 입력하세요!"))
  
 @client.event
 async def on_message(message):
@@ -393,31 +418,7 @@ async def on_message(message):
             await get_vid(voiceC, i.split('/')[1],message)
             video_id_bool = True
         if not (playlist_bool or video_id_bool):
-            params = {
-                "part":"snippet",
-                "type":"vidoe",
-                "maxResults":1,
-                "key":key,
-                "q":music
-            }
-            async with aiohttp.ClientSession() as session:
-                async with session.get("https://www.googleapis.com/youtube/v3/search",params=params) as resp:
-                    html = await resp.json()
-            if len(html['items']) == 0:
-                embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
-                await message.channel.send(embed=embed)
-                return
-            video = html['items'][0]
-            video_id = video['id']['videoId']
-            title = video['snippet']['title']
-            thumbnail = f_thumbnail(video)
-            author = message.author
-            await download(video_id,f'https://www.youtube.com/watch?v={video_id}')
-            voice_channels[voiceC].append((video_id,title,author,thumbnail))
-            embed = discord.Embed(description=f"[{title}](https://www.youtube.com/watch?v={video_id})가 정상적으로 추가되었습니다.", color=0x0080ff)
-            embed.set_author(name="Play",icon_url=client.user.avatar_url)
-            embed.set_footer(text=f'{author}가 등록하였습니다.',icon_url=author.avatar_url)
-            await message.channel.send(embed=embed)
+            await get_search(voiceC,music,message)
         if not voiceC.is_playing():
             await m_play(message,voiceC)
         return
@@ -565,6 +566,10 @@ async def on_message(message):
                 await msg.delete()
                 await pg_queue(message,client,voiceC,queue_page-1)
             return
+        if len(voice_channels[voiceC] == 0):
+            embed = discord.Embed(description=f"재생 중인 노래가 없습니다.", color=0x0080ff)
+            embed.set_author(name="Queue",icon_url=client.user.avatar_url)
+            embed.set_footer(text="0/0페이지")
         await pg_queue(message,client,voiceC,0)
         return
     return
