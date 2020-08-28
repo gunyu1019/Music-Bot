@@ -156,7 +156,7 @@ async def m_play(message,voiceC):
         embed.set_thumbnail(url=voice_channels[voiceC][play_num][3])
         embed.set_footer(text=f'{voice_channels[voiceC][play_num][2]}가 신청한 노래입니다.',icon_url=voice_channels[voiceC][play_num][2].avatar_url)
         await message.channel.send(embed=embed)
-        music_file = discord.FFmpegOpusAudio(file, bitrate=voiceC.channel.bitrate/1000,options=f'-af "volume={voice_setting[voiceC]["volume"]/100}"')
+        music_file = discord.FFmpegOpusAudio(file, bitrate=voiceC.channel.bitrate/1000,options=f'-af "volume={voice_setting[voiceC]["volume"]/100},atempo={voice_setting[voiceC]["tempo"]}"')
         voiceC.play(music_file) #-> 버그, 여기서 플레이가 끝날때까지 기달려야됨.
         while voiceC.is_playing() or voiceC.is_paused(): #-> 사실 이건 임시대처한거일뿐...미친짓일꺼임.
             await asyncio.sleep(0.01)
@@ -310,7 +310,7 @@ async def on_message(message):
         log_info(message.guild,message.channel,message.author,message.content)
         embed = discord.Embed(color=0x0080ff)
         embed.set_author(icon_url=client.user.avatar_url,name='Music Bot')
-        embed.add_field(name='음악',value='join,leave,play,skip,volume,pause,resume,shuffle,repeat,volume',inline=False)
+        embed.add_field(name='음악',value='join,leave,play,select,skip,volume,pause,resume,queue,shuffle,repeat,tempo,volume',inline=False)
         embed.add_field(name='관리',value='help,ping,information,blacklist,prefix',inline=False)
         await message.channel.send(embed=embed)
         return
@@ -349,7 +349,8 @@ async def on_message(message):
         voice_setting[voice] = {
             "shuffle": False,
             "repeat": False,
-            "volume": 100
+            "volume": 100,
+            "tempo": 1.0
         }
         embed = discord.Embed(description=f"{voice.channel}에 성공적으로 연결하였습니다!", color=0x0080ff)
         embed.set_author(name="Join",icon_url=client.user.avatar_url)
@@ -563,6 +564,34 @@ async def on_message(message):
         voiceC.resume()
         embed = discord.Embed(description="다시 재생! 일시 정지를 해제합니다..", color=0x0080ff)
         embed.set_author(name="Resume",icon_url=client.user.avatar_url)
+        await message.channel.send(embed=embed)
+        return
+    if message.content.startswith(f'{prefix}tempo'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        voiceC = get_voice(message)
+        if await check(message,voiceC) or is_banned(author_id,message):
+            return
+        if len(list_message) < 2:
+            embed = discord.Embed(description=f"템포값은 {voice_setting[voiceC]['tempo']}배입니다.", color=0x0080ff)
+            embed.set_author(name="Tempo",icon_url=client.user.avatar_url)
+            await message.channel.send(embed=embed)
+            return
+        try:
+            tempo_num = float(" ".join(list_message[1:]))
+            if tempo_num < 0.5 or tempo_num > 100.0:
+                embed = discord.Embed(title="MusicBot!",description="템포값은 0.5배~100배로 설정이 가능합니다..", color=0xaa0000)
+                await message.channel.send(embed=embed)
+                return
+        except ValueError:
+            embed = discord.Embed(title="MusicBot!",description="옳바른 숫자값을 입력해주세요.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        voice_setting[voiceC]["tempo"] = tempo_num
+        if voiceC.is_playing():
+            embed = discord.Embed(description=f"탬포 값을 {tempo_num}배으로 설정하였습니다.\n**[주의]:** 탬포 값은 다음 곡부터 적용됩니다.", color=0x0080ff)
+        else:
+            embed = discord.Embed(description=f"템포 값을 {tempo_num}배으로 설정하였습니다.", color=0x0080ff)
+        embed.set_author(name="Tempo",icon_url=client.user.avatar_url)
         await message.channel.send(embed=embed)
         return
     if message.content.startswith(f'{prefix}volume'):
