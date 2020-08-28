@@ -75,7 +75,7 @@ def is_banned(user_id,message):
         if banned_list[i][0] == int(user_id):
             if not message.content[1:].startswith("blacklist info"):
                 log_info(message.guild,message.channel,'Blacklist-BOT',str(message.author) + '잘못된 유저가 접근하고 있습니다!(' + message.content + ')')
-                embed = discord.Embed(title="권한 거부(403)", color=0x00aaaa)
+                embed = discord.Embed(title="권한 거부(403)", color=0x0080ff)
                 embed.add_field(name="권한이 거부되었습니다.", value="당신은 블랙리스트로 등록되어 있습니다.", inline=False)
                 coro = message.channel.send(embed=embed)
                 asyncio.run_coroutine_threadsafe(coro, client.loop)
@@ -170,7 +170,7 @@ async def add_queue(message,html,count,voiceC):
     video_id = video['id']
     if type(video_id) == dict:
         if 'videoId' in video_id:
-            video_id = video_id['video_id']
+            video_id = video_id['videoId']
     title = video['snippet']['title']
     thumbnail = f_thumbnail(video)
     author = message.author
@@ -328,7 +328,7 @@ async def on_message(message):
         total = 0
         for i in client.guilds:
             total += len(i.members)
-        embed = discord.Embed(title='Music Bot', color=0x00aaaa)
+        embed = discord.Embed(title='Music Bot', color=0x0080ff)
         embed.add_field(name='제작자',value='건유1019#0001',inline=True)
         embed.add_field(name='깃허브',value='[링크](https://github.com/gunyu1019/Music-Bot)',inline=True)
         embed.add_field(name='<:user:735138021850087476>서버수/유저수',value=f'{len(client.guilds)}서버/{total}명',inline=True)
@@ -360,7 +360,7 @@ async def on_message(message):
         if is_banned(author_id,message):
             return
         if message.guild == None:
-            embed = discord.Embed(title="접두어",description=message.guild.name + "DM에서는 접두어 기능을 사용하실수 없습니다.", color=0x00aaaa)
+            embed = discord.Embed(title="접두어",description=message.guild.name + "DM에서는 접두어 기능을 사용하실수 없습니다.", color=0x0080ff)
             await message.channel.send(embed=embed)
             return
         pf = prefix_m.prefix(message,prefix,db_json)
@@ -428,6 +428,66 @@ async def on_message(message):
             await get_search(voiceC,music,message)
         if not voiceC.is_playing():
             await m_play(message,voiceC)
+        return
+    if message.content.startswith(f'{prefix}select'):
+        log_info(message.guild,message.channel,message.author,message.content)
+        voiceC = get_voice(message)
+        if await check(message,voiceC) or is_banned(author_id,message):
+            return
+        if len(list_message) < 2:
+            embed = discord.Embed(title="MusicBot!",description="URL 혹은 영상 링크를 넣어주세요.", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        embed = discord.Embed(title="유튜브 검색",description="검색목록을 불러오는 중입니다!", color=0x0080ff) #기존 검색코드(우려먹음)
+        msg1 = await message.channel.send(embed=embed)
+        music = " ".join(list_message[1:])
+        params = {
+        "part":"snippet",
+        "type":"vidoe",
+        "maxResults":5,
+        "key":key,
+        "q":music
+        }
+        html = await google_api('search',params)
+        if len(html['items']) == 0:
+            embed = discord.Embed(title="MusicBot!",description="검색결과가 없습니다..", color=0xaa0000)
+            await message.channel.send(embed=embed)
+            return
+        elif len(html['items']) == 1:
+            count_search = 0
+            return
+        else:
+            count = len(html['items'])
+            answer = "```css\n"
+            if count > 5:
+                m_list = html['items'][0:5]
+                count = 5
+            else:
+                m_list = html['items']
+            for i in m_list:
+                answer += f"[{m_list.index(i)+1}]: {m_list['snippet']['title']}\n"
+            answer += "```"
+            embed = discord.Embed(title="유튜브 검색",description=answer +"아래의 반응을 클릭하여 검색해주세요.\n본인만 선택이 가능하며, 30초내로 입력해주세요.\n로딩시에는 선택이 불가능합니다.", color=0x0080ff)
+            msg2 = await message.channel.send(embed=embed)
+            await msg1.delete()
+            for i in range(count):
+                await msg2.add_reaction(f"{i+1}\U0000FE0F\U000020E3")
+            author = message.author
+            def check(reaction, user):
+                for i in range(count):
+                    if str(i+1) + "\U0000FE0F\U000020E3" == reaction.emoji:
+                        return user == author and msg2.id == reaction.message.id
+            reaction,_ = await client.wait_for('reaction_add', check=check)
+            for i in range(count):
+                if f"{i+1}\U0000FE0F\U000020E3" == reaction.emoji:
+                    count_search = i
+                    break
+            try:
+                await msg2.clear_reactions()
+            except discord.Forbidden:
+                embed_waring = discord.Embed(title="\U000026A0경고!",description="권한설정이 잘못되었습니다! 메세지 관리를 활성해 주세요.\n메세지 관리 권한이 활성화 되지 않을 경우 디스코드봇이 정상적으로 작동하지 않습니다.", color=0xffd619)
+                await message.channel.send(embed=embed_waring)
+        await add_queue(message,html,count_search,voiceC)
         return
     if message.content == f'{prefix}skip':
         log_info(message.guild,message.channel,message.author,message.content)
