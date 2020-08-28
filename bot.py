@@ -366,7 +366,7 @@ async def on_message(message):
         pf = prefix_m.prefix(message,prefix,db_json)
         await pf.get(directory,client)
         return
-    
+
     if message.content == f'{prefix}debug' and is_manager(author_id):
         log_info(message.guild,message.channel,message.author,message.content)
         voiceC = get_voice(message)
@@ -465,7 +465,7 @@ async def on_message(message):
             else:
                 m_list = html['items']
             for i in m_list:
-                answer += f"[{m_list.index(i)+1}]: {m_list['snippet']['title']}\n"
+                answer += f"[{m_list.index(i)+1}]: {i['snippet']['title']}\n"
             answer += "```"
             embed = discord.Embed(title="유튜브 검색",description=answer +"아래의 반응을 클릭하여 검색해주세요.\n본인만 선택이 가능하며, 30초내로 입력해주세요.\n로딩시에는 선택이 불가능합니다.", color=0x0080ff)
             msg2 = await message.channel.send(embed=embed)
@@ -473,11 +473,11 @@ async def on_message(message):
             for i in range(count):
                 await msg2.add_reaction(f"{i+1}\U0000FE0F\U000020E3")
             author = message.author
-            def check(reaction, user):
+            def check_wait_for(reaction, user):
                 for i in range(count):
                     if str(i+1) + "\U0000FE0F\U000020E3" == reaction.emoji:
                         return user == author and msg2.id == reaction.message.id
-            reaction,_ = await client.wait_for('reaction_add', check=check)
+            reaction,_ = await client.wait_for('reaction_add', check=check_wait_for)
             for i in range(count):
                 if f"{i+1}\U0000FE0F\U000020E3" == reaction.emoji:
                     count_search = i
@@ -487,7 +487,10 @@ async def on_message(message):
             except discord.Forbidden:
                 embed_waring = discord.Embed(title="\U000026A0경고!",description="권한설정이 잘못되었습니다! 메세지 관리를 활성해 주세요.\n메세지 관리 권한이 활성화 되지 않을 경우 디스코드봇이 정상적으로 작동하지 않습니다.", color=0xffd619)
                 await message.channel.send(embed=embed_waring)
+            await msg2.delete()
         await add_queue(message,html,count_search,voiceC)
+        if not voiceC.is_playing():
+            await m_play(message,voiceC)
         return
     if message.content == f'{prefix}skip':
         log_info(message.guild,message.channel,message.author,message.content)
