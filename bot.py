@@ -570,6 +570,8 @@ async def on_message(message):
             embed = discord.Embed(description=f"재생 중인 노래가 없습니다.", color=0x0080ff)
             embed.set_author(name="Queue",icon_url=client.user.avatar_url)
             embed.set_footer(text="0/0페이지")
+            await message.channel.send(embed=embed)
+            return
         await pg_queue(message,client,voiceC,0)
         return
     return
