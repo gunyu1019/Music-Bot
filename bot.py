@@ -168,6 +168,9 @@ async def m_play(message,voiceC):
 async def add_queue(message,html,count,voiceC):
     video = html['items'][count]
     video_id = video['id']
+    if type(video_id) == dict:
+        if 'videoId' in video_id:
+            video_id = video_id['video_id']
     title = video['snippet']['title']
     thumbnail = f_thumbnail(video)
     author = message.author
@@ -195,12 +198,16 @@ async def google_api(t,params,count=0):
                 html = await resp.json()
             elif resp.status == 403:
                 e_code = await resp.json()
+                e_bool = False
                 for i in e_code['error']['errors']:
                     if i['reason'] == "quotaExceeded":
                         global key
                         key = get_new()
+                        e_bool = True
                         params['key'] = key
                         await google_api(t,params,count+1)
+                if not e_bool:
+                    raise API_error('An unknown error has occurred.')
             else:
                 html = None
     return html
