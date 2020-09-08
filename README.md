@@ -2,4 +2,5 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/gunyu1019/music-bot/badge)](https://www.codefactor.io/repository/github/gunyu1019/music-bot)
 ![python_version](https://img.shields.io/badge/python-3.8-3776AB?style=flat&logo=python&logoColor=ffffff)<br/>
 ## Music Bot
-- 다양한 기능을 제공하는 음악봇 입니다. (제작중)
+- 다양한 기능을 제공하는 음악봇 입니다. 현재 아직 100% 완성이 아닌상태에서 작동중에 있습니다.
+- [체험하기](https://discord.gg/VGFnvW)에 들어오셔서 체험하실 수 있습니다.
