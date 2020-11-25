@@ -15,10 +15,8 @@ import importlib
 from urllib import parse 
 
 directory = os.path.dirname(os.path.abspath(__file__)).replace("\\","/")
-db_f = open(directory + "/Data/bot_info.json",mode='r')
-db = db_f.read()
-db_f.close()
-db_json = json.loads(db)
+with open(directory + "/Data/bot_info.json",mode='r') as db_f:
+    db = json.load(db_f)
 
 db_ip = db_json["mysql"]["ip"]
 db_user = db_json["mysql"]["user"]
