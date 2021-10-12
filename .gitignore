@@ -130,4 +130,7 @@ dmypy.json
 
 # VSC
 .vscode/
+
+# Music Bot Configuration
 cogs/_music.py
+config/config.ini
