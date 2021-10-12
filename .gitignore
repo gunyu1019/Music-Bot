@@ -130,8 +130,4 @@ dmypy.json
 
 # VSC
 .vscode/
-
-#Music_Bot
-Data/bot_info.json
-Music_cache/
-Log/
+cogs/_music.py
