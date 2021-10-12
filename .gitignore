@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# VSC
+# IDLE Configuration
 .vscode/
+.idea/
 
 # Music Bot Configuration
 cogs/_music.py
