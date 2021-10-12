@@ -23,6 +23,47 @@ SOFTWARE.
 
 import discord
 
+from typing import Union, Optional
+
+
+class Options:
+    def __init__(
+            self,
+            label: str,
+            value: str,
+            description: Optional[str] = None,
+            emoji: Union[discord.PartialEmoji, dict] = None,
+            default: bool = False
+    ):
+        self.label = label
+        self.value = value
+        self.description = description
+        self.emoji = emoji
+        self.default = default
+
+    def to_dict(self) -> dict:
+        data = {
+            "label": self.label,
+            "value": self.value
+        }
+
+        if self.description is not None:
+            data["description"] = self.description
+        if self.emoji is not None:
+            data["emoji"] = self.emoji.to_dict() if isinstance(self.emoji, discord.PartialEmoji) else self.emoji
+        if self.default is not None:
+            data["default"] = self.default
+
+        return data
+
+    def from_dict(self, payload: dict):
+        self.label: str = payload.get("label")
+        self.value: str = payload.get("value")
+        self.description: Optional[str] = payload.get("description")
+        self.emoji: discord.PartialEmoji = payload.get("emoji")
+        self.default: bool = payload.get("default")
+        return self
+
 
 class Components:
     def __init__(self, components_type: int):
@@ -108,7 +149,7 @@ class Button(Components):
 class Selection(Components):
     def __init__(self,
                  custom_id: str = None,
-                 options: list = None,
+                 options: Union[list, Options] = None,
                  placeholder: str = None,
                  min_values: int = None,
                  max_values: int = None):
@@ -124,7 +165,9 @@ class Selection(Components):
         base = {
             "type": 3,
             "custom_id": self.custom_id,
-            "options": self.options
+            "options": [
+                option.to_dict() if isinstance(option, Options) else option for option in self.options
+            ]
         }
         if self.placeholder is not None:
             base["placeholder"] = self.placeholder
@@ -137,7 +180,7 @@ class Selection(Components):
 
     def from_dict(self, payload: dict):
         self.custom_id = payload.get("custom_id")
-        self.options = payload.get("options")
+        self.options = payload.get("options", [])
         self.placeholder = payload.get("placeholder")
         self.min_values = payload.get("min_values")
         self.max_values = payload.get("max_values")

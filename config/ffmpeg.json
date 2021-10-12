@@ -1,0 +1,4 @@
+{
+    "before_options": "-nostdin",
+    "options": "-vn"
+}

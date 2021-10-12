@@ -1,0 +1,13 @@
+{
+    "format": "bestaudio/best",
+    "outtmpl": "music_caches/%(extractor)s-%(id)s-%(title)s.%(ext)s",
+    "restrictfilenames": true,
+    "noplaylist": true,
+    "nocheckcertificate": true,
+    "ignoreerrors": false,
+    "logtostderr": false,
+    "quiet": true,
+    "no_warnings": true,
+    "default_search": "auto",
+    "source_address": "0.0.0.0"
+}

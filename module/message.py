@@ -263,7 +263,11 @@ class MessageSendable:
     def __init__(self, state: ConnectionState, channel):
         self._state = state
         self.http = HttpClient(http=self._state.http)
-        self.channel = channel
+        self.channel: Union[
+            discord.TextChannel,
+            discord.DMChannel,
+            discord.GroupChannel
+        ] = channel
 
     async def send(
             self,

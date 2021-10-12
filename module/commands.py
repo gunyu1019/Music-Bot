@@ -33,7 +33,7 @@ class Command:
 
         self.name = name = kwargs.get('name') or func.__name__
         if not isinstance(name, str):
-            raise TypeError('Name of a commands must be a string.')
+            raise TypeError('Name of a command must be a string.')
 
         self.callback = func
         self.aliases: list = kwargs.get('aliases', [])
