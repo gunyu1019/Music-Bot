@@ -187,6 +187,8 @@ class MessageCommand(Message):
     ):
         super().__init__(state=state, channel=channel, data=data)
 
+        self.function = None
+        self.parents = None
         self.prefix: Optional[str] = None
         self.command_prefix: Optional[str] = None
         options = self.content.split()

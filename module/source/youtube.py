@@ -15,12 +15,13 @@ ytdl = youtube_dl.YoutubeDL(option)
 
 
 class Youtube(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, requester):
+    def __init__(self, source, *, data, requester: discord.Member):
         super().__init__(source)
         self.requester = requester
 
         self.title = data.get('title')
         self.web_url = data.get('webpage_url')
+        self.thumbnails = [YoutubeThumbnail(x) for x in data.get('thumbnails', [])]
         self.duration = data.get('duration')
         self.uploader = data.get('uploader')
         self.uploader_id = data.get('uploader_id')
@@ -28,6 +29,13 @@ class Youtube(discord.PCMVolumeTransformer):
 
     def __getitem__(self, item: str):
         return self.__getattribute__(item)
+
+    @property
+    def thumbnail(self):
+        if len(self.thumbnails) == 0:
+            return None
+        best = sorted(self.thumbnails, key=lambda x: (x.width, x.height))
+        return best[0]
 
     @classmethod
     async def create_source(
@@ -39,7 +47,7 @@ class Youtube(discord.PCMVolumeTransformer):
             loop,
             download=False
     ):
-        loop = loop or client.loop or asyncio.get_event_loop()
+        loop = loop or asyncio.get_event_loop()
 
         to_run = partial(ytdl.extract_info, url=search, download=download)
         data: Dict[Any] = await loop.run_in_executor(None, to_run)
@@ -75,7 +83,8 @@ class Youtube(discord.PCMVolumeTransformer):
                 return [{
                     'webpage_url': x['webpage_url'],
                     'requester': ctx.author,
-                    'title': x['title']
+                    'title': x['title'],
+                    'type': Youtube
                 } for x in data]
             return {'webpage_url': data['webpage_url'], 'requester': ctx.author, 'title': data['title']}
 
@@ -87,7 +96,7 @@ class Youtube(discord.PCMVolumeTransformer):
         return cls(discord.FFmpegPCMAudio(source), data=data, requester=ctx.author)
 
     @classmethod
-    async def regather_stream(cls, data, *, loop):
+    async def streaming(cls, data, *, loop):
         loop = loop or asyncio.get_event_loop()
         requester = data['requester']
 
@@ -95,3 +104,21 @@ class Youtube(discord.PCMVolumeTransformer):
         data = await loop.run_in_executor(None, to_run)
 
         return cls(discord.FFmpegPCMAudio(data['url']), data=data, requester=requester)
+
+
+class YoutubeThumbnail:
+    def __init__(self, data: dict):
+        self.id: str = data['id']
+        self.width: int = data['width']
+        self.height: int = data['height']
+        self.url: str = data['url']
+        self.resolution: str = data.get('resolution')
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'width': self.width,
+            'height': self.height,
+            'url': self.url,
+            'resolution': self.resolution
+        }

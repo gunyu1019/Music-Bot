@@ -236,6 +236,8 @@ class ApplicationContext(InteractionContext):
         self.type = payload.get("type", 2)
         data = payload.get("data", {})
 
+        self.function = None
+        self.parents = None
         self.application_type = data.get("type")
         self.target_id = data.get("target_id")
         self.name = data.get("name")
@@ -257,9 +259,9 @@ class ApplicationContext(InteractionContext):
                     else:
                         self.member = client.get_user(value)
                 elif option_type == 7 and self.guild is not None:
-                    self.options[key] = self.guild.get_channel(value)
+                    self.options[key]: Optional[discord.abc.GuildChannel] = self.guild.get_channel(value)
                 elif option_type == 8:
-                    self.options[key]: discord.Role = self.guild.get_role(value)
+                    self.options[key]: Optional[discord.Role] = self.guild.get_role(value)
                 elif option_type == 10:
                     self.options[key]: float = float(value)
                 else:

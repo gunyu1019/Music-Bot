@@ -30,7 +30,7 @@ class Search:
             return component.custom_id == self.selection_id and component.author.id == author.id
         return f
 
-    async def selection(self, data: List[Dict[Any]]) -> Tuple[
+    async def selection(self, data: List[Dict[str, Any]]) -> Tuple[
         Optional[
             Union[
                 Union[
@@ -156,4 +156,33 @@ class Search:
             return await self.context.send(embed=embed)
         else:
             await b_message.edit(embed=embed)
+        return
+
+    async def stream_error(self):
+        embed = discord.Embed(
+            title="[오류]",
+            description="음악을 불러오는 도중 에러가 발생하였습니다.",
+            color=self.error_color
+        )
+        await self.context.send(embed)
+        return
+
+    async def playing(self, source):
+        embed = discord.Embed(
+            title="[재생]",
+            description="[{title}]({url})".format(
+                title=source.title,
+                url=source.web_url
+            ),
+            color=self.color
+        )
+        embed.set_footer(
+            text="신청 - {0}#{1}".format(
+                source.requester.name,
+                source.requester.discriminator
+            ),
+            icon_url=source.requester.avatar.url
+        )
+        embed.set_thumbnail(url=source.thumbnail.url)
+        await self.context.send(embed=embed)
         return

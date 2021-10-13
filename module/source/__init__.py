@@ -1,1 +1,1 @@
-from youtube import Youtube
+from .youtube import Youtube

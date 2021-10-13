@@ -140,7 +140,8 @@ class SocketReceive(commands.Cog):
             if parser.getboolean("Inspection", "inspection") and not permission(1)(ctx):
                 await inspection(ctx)
                 return
-
+            ctx.function = _function.callback
+            ctx.parents = _function.parents
             try:
                 await _function.callback(_function.parents, ctx)
             except Exception as error:
