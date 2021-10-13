@@ -96,6 +96,12 @@ class InteractionContext:
             payload['components'] = components
         return payload
 
+    @property
+    def voice_client(self) -> Optional[discord.VoiceProtocol]:
+        if self.guild is None:
+            return None
+        return self.guild.voice_client
+
     async def defer(self, hidden: bool = False):
         base = {}
         if hidden:

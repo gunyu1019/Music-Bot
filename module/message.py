@@ -101,6 +101,12 @@ class Message(discord.Message):
         self.components = from_payload(data.get("components", []))
         self.http = HttpClient(http=self._state.http)
 
+    @property
+    def voice_client(self) -> Optional[discord.VoiceProtocol]:
+        if self.guild is None:
+            return None
+        return self.guild.voice_client
+
     async def send(
             self,
             content=None,
