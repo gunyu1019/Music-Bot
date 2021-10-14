@@ -45,7 +45,7 @@ class Search:
     ]:
         if len(data) == 0:
             embed = discord.Embed(
-                title="[재생]",
+                title="Music Bot",
                 description="검색결과가 없습니다.",
                 color=self.error_color
             )
@@ -60,7 +60,7 @@ class Search:
             description_data = data[0:5]
 
         embed = discord.Embed(
-            title="[재생]",
+            title="Music Bot",
             description="다음 항목 중 재생할 노래를 선택해주세요.```scss\n{0}\n```".format(
                 [
                     "[{0}] {1} ({2})".format(
@@ -118,7 +118,7 @@ class Search:
             )
         except asyncio.TimeoutError:
             embed = discord.Embed(
-                title="[재생]",
+                title="Music Bot",
                 description="시간이 초과되었습니다. 다시 실행해주시기 바랍니다.",
                 color=self.error_color
             )
@@ -133,7 +133,7 @@ class Search:
     async def comment_queue(self, data, b_message: Optional[Message] = None) -> Optional[Message]:
         if isinstance(data, list):
             embed = discord.Embed(
-                title="[재생]",
+                title="Music Bot",
                 description="[{title}]({url}) 외 {count}개가 정상적으로 추가되었습니다.".format(
                     title=data[0]['title'], url=data[0]['webpage_url'], count=(len(data)-1)
                 ),
@@ -141,14 +141,14 @@ class Search:
             )
         else:
             embed = discord.Embed(
-                title="[재생]",
+                title="Music Bot",
                 description="[{title}]({url})이/가 정상적으로 추가되었습니다.".format(
                     title=data['title'], url=data['webpage_url']
                 ),
                 color=self.color
             )
-        embed.set_author(
-            name="{0}#{1}".format(self.context.author.name, self.context.author.discriminator),
+        embed.set_footer(
+            text="{0}#{1}".format(self.context.author.name, self.context.author.discriminator),
             icon_url=self.context.author.avatar.url
         )
 
@@ -160,7 +160,7 @@ class Search:
 
     async def stream_error(self):
         embed = discord.Embed(
-            title="[오류]",
+            title="Music Bot",
             description="음악을 불러오는 도중 에러가 발생하였습니다.",
             color=self.error_color
         )
@@ -169,7 +169,7 @@ class Search:
 
     async def playing(self, source):
         embed = discord.Embed(
-            title="[재생]",
+            title="Music Bot",
             description="[{title}]({url})".format(
                 title=source.title,
                 url=source.web_url

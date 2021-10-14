@@ -57,8 +57,11 @@ class Youtube(discord.PCMVolumeTransformer):
         if 'entries' in data:
             if data.get("extractor", None) == "youtube:search":
                 position, b_message = await client.selection(data['entries'])
-                if position is None or "cancel" in position:
+                if position is None:
                     return
+                elif isinstance(position, str):
+                    if "cancel" in position:
+                        return
                 elif isinstance(position, list):
                     data: List[Dict[Any]] = [
                         x for index, x in enumerate(data['entries']) if index in position
