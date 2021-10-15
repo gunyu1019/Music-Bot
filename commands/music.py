@@ -2,16 +2,19 @@ import discord
 import asyncio
 
 from typing import Union
+from youtube_dl import extractor
 from config.config import parser
 from module import commands
-from module.source import Youtube
+from module.source import Youtube as source_Youtube
 from module.message import MessageCommand
 from module.interaction import ApplicationContext
+from module.youtube import Youtube
+from utils.token import google_token
 from process.player import Player
 
 
 class Command:
-    def __init__(self, bot):
+    def __init__(self, bot: discord.Client):
         self.bot = bot
 
         self.color = int(parser.get("Color", "default"), 16)
@@ -19,6 +22,10 @@ class Command:
         self.warning_color = int(parser.get("Color", "warning"), 16)
 
         self.players = {}
+        self.youtube = Youtube(
+            token=google_token,
+            loop=bot.loop
+        )
 
     async def cleanup(self, guild):
         try:
@@ -105,9 +112,9 @@ class Command:
         await ctx.send(embed=embed)
 
     @commands.command(name='재생', aliases=['play', 'p'])
-    async def play(self, ctx):
+    async def play(self, ctx: Union[ApplicationContext, MessageCommand]):
         if isinstance(ctx, ApplicationContext):
-            search = ctx.options[0:]
+            search = " ".join([x for x in ctx.options.values()])
         else:
             if len(ctx.options) == 0:
                 embed = discord.Embed(
@@ -117,37 +124,106 @@ class Command:
                 )
                 await ctx.send(embed=embed)
                 return
-            search = ctx.options[0:]
-
+            search = " ".join(ctx.options[0:])
+        original_search = search
         await ctx.defer()
 
         vc = ctx.voice_client
         if not vc:
             await self.connect.callback(self, ctx)
 
+        ie_key = source_Youtube.get_ie(search)
+        if ie_key == extractor.GenericIE:
+            _data = await source_Youtube.create_source_without_process(search, self.bot.loop)
+            search = _data.get("url")
+            ie_key = source_Youtube.get_ie(search)
+
+        client = source_Youtube.client(ctx, self.bot)
+        b_message = None
+        if ie_key == extractor.YoutubeSearchIE:
+            _data = await self.youtube.search(original_search)
+            position, b_message = await client.selection(_data.items)
+            if isinstance(position, str):
+                # Only cancel is string
+                return
+            elif isinstance(position, int):
+                result = _data.items[position-1]
+                _id = result.get("id", {})
+                _snippet = result.get("snippet", {})
+                data = {
+                    'webpage_url': "https://www.youtube.com/watch?v={0}".format(
+                        _id.get("videoId", "")
+                    ),
+                    'requester': ctx.author,
+                    'title': _snippet.get("title")
+                }
+            elif isinstance(position, list):
+                result = [
+                    _data.items[x-1] for x in position
+                ]
+                data = [
+                    {
+                        'webpage_url': "https://www.youtube.com/watch?v={0}".format(
+                            x.get("id", {}).get("videoId", "")
+                        ),
+                        'requester': ctx.author,
+                        'title': x.get(
+                            "snippet", {}
+                        ).get(
+                            "title", ""
+                        )
+                    } for x in result
+                ]
+            else:
+                return
+        else:
+            data = await source_Youtube.create_source(
+                url=search,
+                loop=self.bot.loop,
+                ie_key=ie_key
+            )
+            data['requester'] = ctx.author
+
+        if isinstance(data, dict):
+            _ = await client.comment_queue(
+                title=data['title'],
+                url=data['webpage_url'],
+                b_message=b_message
+            )
+        elif isinstance(data, list):
+            _ = await client.muiti_comment_queue(
+                title=data,
+                url=data,
+                b_message=b_message
+            )
         player = self.get_player(ctx)
-        source = await Youtube.create_source(
-            ctx,
-            self.bot,
-            " ".join(search),
-            loop=self.bot.loop,
-            download=False
-        )
-        await player.queue.put(source)
+        if isinstance(data, list):
+            for x in data:
+                await player.queue.put(x)
+        else:
+            await player.queue.put(data)
 
     @commands.command(name='pause')
     async def pause_(self, ctx):
-        vc = ctx.guild.voice_client
+        vc = ctx.voice_client
 
         if not vc or not vc.is_playing():
-            embed = discord.Embed(title="", description="I am currently not playing anything",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="재생 중인 노래가 없습니다.",
+                color=self.warning_color
+            )
             return await ctx.send(embed=embed)
         elif vc.is_paused():
             return
 
         vc.pause()
-        await ctx.send("Paused ⏸️")
+        embed = discord.Embed(
+            title="Music Bot",
+            description="일시 정지",
+            color=self.color
+        )
+        await ctx.send(embed=embed)
 
     @commands.command(name='resume')
     async def resume_(self, ctx):

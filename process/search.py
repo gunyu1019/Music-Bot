@@ -33,10 +33,8 @@ class Search:
     async def selection(self, data: List[Dict[str, Any]]) -> Tuple[
         Optional[
             Union[
-                Union[
-                    int,
-                    str
-                ],
+                int,
+                str,
                 List[int]
             ]
         ], Optional[
@@ -63,14 +61,9 @@ class Search:
             title="Music Bot",
             description="다음 항목 중 재생할 노래를 선택해주세요.```scss\n{0}\n```".format(
                 [
-                    "[{0}] {1} ({2})".format(
-                        index,
-                        video["title"],
-                        video.get("uploader", "")
-                    ) if "uploader" in video else
                     "[{0}] {1}".format(
-                        index,
-                        video["title"]
+                        index + 1,
+                        video["snippet"]["title"]
                     ) for index, video in enumerate(description_data)
                 ]
             ),
@@ -79,14 +72,14 @@ class Search:
         options = [
             Options(
                 label="{0}".format(
-                    value.get("title", "")
+                    value["snippet"].get("title", "")
                 ), value="selection_player_{0}".format(index),
                 description="{0}".format(
-                    value.get("webpage_url", None)
+                    value["id"].get("videoId", None)
                 ), emoji=discord.PartialEmoji(name="{0}\U0000FE0F\U000020E3".format(
-                    str(index)[0]
+                    str(index + 1)[0]
                 ))
-            ) for index, value in _data
+            ) for index, value in enumerate(_data)
         ]
 
         options.append(
@@ -130,23 +123,33 @@ class Search:
             return int(component.values[0][len_buffer:]), msg
         return [int(value[len_buffer:]) for value in component.values], msg
 
-    async def comment_queue(self, data, b_message: Optional[Message] = None) -> Optional[Message]:
-        if isinstance(data, list):
-            embed = discord.Embed(
-                title="Music Bot",
-                description="[{title}]({url}) 외 {count}개가 정상적으로 추가되었습니다.".format(
-                    title=data[0]['title'], url=data[0]['webpage_url'], count=(len(data)-1)
-                ),
-                color=self.color
-            )
+    async def comment_queue(self, title, url, b_message: Optional[Message] = None) -> Optional[Message]:
+        embed = discord.Embed(
+            title="Music Bot",
+            description="[{title}]({url})이/가 정상적으로 추가되었습니다.".format(
+                title=title, url=url
+            ),
+            color=self.color
+        )
+        embed.set_footer(
+            text="{0}#{1}".format(self.context.author.name, self.context.author.discriminator),
+            icon_url=self.context.author.avatar.url
+        )
+
+        if b_message is None:
+            return await self.context.send(embed=embed)
         else:
-            embed = discord.Embed(
-                title="Music Bot",
-                description="[{title}]({url})이/가 정상적으로 추가되었습니다.".format(
-                    title=data['title'], url=data['webpage_url']
-                ),
-                color=self.color
-            )
+            await b_message.edit(embed=embed)
+        return
+
+    async def muiti_comment_queue(self, data, b_message: Optional[Message] = None) -> Optional[Message]:
+        embed = discord.Embed(
+            title="Music Bot",
+            description="[{title}]({url}) 외 {count}개가 정상적으로 추가되었습니다.".format(
+                title=data[0]['title'], url=data[0]['webpage_url'], count=(len(data) - 1)
+            ),
+            color=self.color
+        )
         embed.set_footer(
             text="{0}#{1}".format(self.context.author.name, self.context.author.discriminator),
             icon_url=self.context.author.avatar.url

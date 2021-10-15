@@ -5,6 +5,7 @@ import os
 import youtube_dl
 
 from functools import partial
+from discord.user import _UserTag
 from typing import Dict, List, Any
 from utils.directory import directory
 from process.search import Search
@@ -37,66 +38,55 @@ class Youtube(discord.PCMVolumeTransformer):
         best = sorted(self.thumbnails, key=lambda x: (x.width, x.height))
         return best[0]
 
-    @classmethod
-    async def create_source(
-            cls,
+    @staticmethod
+    def get_ie(search: str):
+        for _ie in getattr(ytdl, "_ies"):
+            if _ie.suitable(search):
+                ie_key = _ie
+                break
+        else:
+            return
+        return ie_key
+
+    @staticmethod
+    def client(
             ctx,
-            client: discord.Client,
-            search: str,
-            *,
+            client: discord.Client
+    ):
+        return Search(context=ctx, client=client)
+
+    @staticmethod
+    async def create_source(
+            url: str,
             loop,
-            download=False
+            **kwargs
     ):
         loop = loop or asyncio.get_event_loop()
 
-        to_run = partial(ytdl.extract_info, url=search, download=download)
+        to_run = partial(ytdl.extract_info, url=url, download=False, ie_key=kwargs.get("ie_key"))
         data: Dict[Any] = await loop.run_in_executor(None, to_run)
 
-        client = Search(context=ctx, client=client)
-        b_message = None
         if 'entries' in data:
-            if data.get("extractor", None) == "youtube:search":
-                position, b_message = await client.selection(data['entries'])
-                if position is None:
-                    return
-                elif isinstance(position, str):
-                    if "cancel" in position:
-                        return
-                elif isinstance(position, list):
-                    data: List[Dict[Any]] = [
-                        x for index, x in enumerate(data['entries']) if index in position
-                    ]
-                else:
-                    data: Dict[Any] = data['entries'][position]
-            else:
-                data: Dict[Any] = data['entries'][0]
+            data: Dict[Any] = data['entries'][0]
 
-        _ = await client.comment_queue(
-            data=data,
-            b_message=b_message
+        return {'webpage_url': data['webpage_url'], 'title': data['title']}
+
+    @staticmethod
+    async def create_source_without_process(
+            url: str,
+            loop
+    ):
+        loop = loop or asyncio.get_event_loop()
+
+        to_run = partial(
+            ytdl.extract_info,
+            url=url,
+            download=False,
+            process=False,
+            force_generic_extractor=True
         )
-
-        if download:
-            if isinstance(data, list):
-                source = [ytdl.prepare_filename(x) for x in data]
-            else:
-                source = ytdl.prepare_filename(data)
-        else:
-            if isinstance(data, list):
-                return [{
-                    'webpage_url': x['webpage_url'],
-                    'requester': ctx.author,
-                    'title': x['title'],
-                    'type': Youtube
-                } for x in data]
-            return {'webpage_url': data['webpage_url'], 'requester': ctx.author, 'title': data['title']}
-
-        if isinstance(source, list):
-            return [
-                cls(discord.FFmpegPCMAudio(x), data=data, requester=ctx.author)
-                for x in source
-            ]
-        return cls(discord.FFmpegPCMAudio(source), data=data, requester=ctx.author)
+        data: Dict[Any] = await loop.run_in_executor(None, to_run)
+        return data
 
     @classmethod
     async def streaming(cls, data, *, loop):
@@ -111,11 +101,14 @@ class Youtube(discord.PCMVolumeTransformer):
 
 class YoutubeThumbnail:
     def __init__(self, data: dict):
-        self.id: str = data['id']
+        self.id: str = data.get('id', 0)
         self.width: int = data['width']
         self.height: int = data['height']
         self.url: str = data['url']
-        self.resolution: str = data.get('resolution')
+        self.resolution: str = data.get('resolution') or "{width}x{height}".format(
+            width=self.width,
+            height=self.height
+        )
 
     def to_dict(self):
         return {

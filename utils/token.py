@@ -26,7 +26,7 @@ connect = get_database()
 
 cur = connect.cursor(pymysql.cursors.DictCursor)
 try:
-    cur.execute("SELECT token from Music_Bots")
+    cur.execute("SELECT * from Music_Bot")
 except pymysql.err.DatabaseError:
     client_list = {
         "token": parser.get("DEFAULT", "token"),
@@ -35,4 +35,12 @@ else:
     client_list = cur.fetchone()
 
 token = client_list.get('token')
+google_token = []
+for i in range(1, 12):
+    google_token.append(
+        client_list.get(
+            "google_client{i}".format(i=i)
+        )
+    )
+
 connect.close()

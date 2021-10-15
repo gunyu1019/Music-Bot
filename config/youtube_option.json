@@ -2,7 +2,7 @@
     "format": "bestaudio/best",
     "outtmpl": "music_caches/%(extractor)s-%(id)s-%(title)s.%(ext)s",
     "restrictfilenames": true,
-    "noplaylist": true,
+    "noplaylist": false,
     "nocheckcertificate": true,
     "ignoreerrors": false,
     "logtostderr": false,
