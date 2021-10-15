@@ -154,7 +154,6 @@ class Search:
             text="{0}#{1}".format(self.context.author.name, self.context.author.discriminator),
             icon_url=self.context.author.avatar.url
         )
-        print(b_message, b_message is None)
         if b_message is None:
             return await self.context.send(embed=embed)
         else:

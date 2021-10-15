@@ -103,7 +103,7 @@ class InteractionContext:
         return self.guild.voice_client
 
     async def defer(self, hidden: bool = False):
-        base = {"type": 6}
+        base = {"type": 5}
         if hidden:
             base["data"] = {"flags": 64}
 

@@ -210,8 +210,8 @@ class Command:
         else:
             await player.queue.put(data)
 
-    @commands.command(name='pause')
-    async def pause_(self, ctx):
+    @commands.command(name='일시정지', aliases=['pause'])
+    async def pause(self, ctx):
         vc = ctx.voice_client
 
         if not vc or not vc.is_playing():
@@ -222,37 +222,33 @@ class Command:
             )
             return await ctx.send(embed=embed)
         elif vc.is_paused():
+            vc.resume()
+            embed = discord.Embed(
+                title="Music Bot",
+                description="일시 정지 해제",
+                color=self.color
+            )
+        elif not vc.is_paused():
+            vc.pause()
+            embed = discord.Embed(
+                title="Music Bot",
+                description="일시 정지",
+                color=self.color
+            )
+        else:
             return
-
-        vc.pause()
-        embed = discord.Embed(
-            title="Music Bot",
-            description="일시 정지",
-            color=self.color
-        )
         await ctx.send(embed=embed)
 
-    @commands.command(name='resume')
-    async def resume_(self, ctx):
+    @commands.command(name='스킵', aliases=['skip'])
+    async def skip(self, ctx):
         vc = ctx.voice_client
 
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
-            return await ctx.send(embed=embed)
-        elif not vc.is_paused():
-            return
-
-        vc.resume()
-        await ctx.send("Resuming ⏯️")
-
-    @commands.command(name='skip')
-    async def skip_(self, ctx):
-        vc = ctx.voice_client
-
-        if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
         if vc.is_paused():
@@ -262,13 +258,16 @@ class Command:
 
         vc.stop()
 
-    @commands.command(name='remove', aliases=['rm', 'rem'])
-    async def remove_(self, ctx, pos: int = None):
+    @commands.command(name='정지', aliases=['stop'])
+    async def stop(self, ctx, pos: int = None):
         vc = ctx.voice_client
 
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
         player = self.get_player(ctx)
@@ -289,12 +288,14 @@ class Command:
 
     @commands.command(name='clear', aliases=['clr', 'cl', 'cr'])
     async def clear_(self, ctx):
-
         vc = ctx.voice_client
 
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
         player = self.get_player(ctx)
@@ -305,9 +306,13 @@ class Command:
     async def queue_info(self, ctx):
         vc = ctx.voice_client
 
+
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
         player = self.get_player(ctx)
@@ -340,9 +345,13 @@ class Command:
     async def now_playing_(self, ctx):
         vc = ctx.voice_client
 
+
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
         player = self.get_player(ctx)
@@ -381,11 +390,6 @@ class Command:
                                   color=discord.Color.green())
             return await ctx.send(embed=embed)
 
-        # if not 0 < vol < 101:
-        #     embed = discord.Embed(title="", description="Please enter a value between 1 and 100",
-        #                           color=discord.Color.green())
-        #     return await ctx.send(embed=embed)
-
         player = self.get_player(ctx)
 
         if vc.source:
@@ -396,16 +400,23 @@ class Command:
                               color=discord.Color.green())
         await ctx.send(embed=embed)
 
-    @commands.command(name='leave', aliases=["stop", "dc", "disconnect", "bye"])
-    async def leave_(self, ctx):
+    @commands.command(name='나가기', aliases=["stop", "disconnect", "나가기"])
+    async def leave(self, ctx):
         vc = ctx.voice_client
 
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I'm not connected to a voice channel",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
-
-        await ctx.send('**Successfully disconnected**')
+        embed = discord.Embed(
+            title="Music Bot",
+            description="음성채널 연결 해제에 성공했습니다.",
+            color=self.color
+        )
+        await ctx.send(embed=embed)
 
         await self.cleanup(ctx.guild)
 

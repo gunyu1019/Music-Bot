@@ -36,7 +36,7 @@ class Player:
                 async with timeout(300):
                     source = await self.queue.get()
             except asyncio.TimeoutError:
-                return await self.destroy(self._guild.id)
+                return await self.destroy(self._guild)
 
             if not isinstance(source, Youtube):
                 try:
