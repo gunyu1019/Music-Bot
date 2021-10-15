@@ -51,7 +51,7 @@ async def canceled(ctx: ComponentsContext):
     embed.add_field(
         name="왜 상호작용을 찾을 수 없나요?",
         value="상호작용을 찾을 수 없는 대표적 이유는 `대기 시간초과(5분)`이 있습니다. "
-              "이외에도 특정 서버에 전적, 매치 등의 동적 명령어를 과도하게 사용할 경우 최상위에 있던 메시지의 상호작용이 우선 종료됩니다.",
+              "이외에도 이미 종료된 상호작용에서 재요청이 들어올 경우에도 발생합니다.",
         inline=False
     )
     await ctx.send(embed=embed, hidden=True)

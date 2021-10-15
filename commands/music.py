@@ -145,9 +145,15 @@ class Command:
             position, b_message = await client.selection(_data.items)
             if isinstance(position, str):
                 # Only cancel is string
+                embed = discord.Embed(
+                    title="Music Bot",
+                    description="사용자 요청에 따라 취소 되었습니다.",
+                    color=self.color
+                )
+                await b_message.edit(embed=embed)
                 return
             elif isinstance(position, int):
-                result = _data.items[position-1]
+                result = _data.items[position]
                 _id = result.get("id", {})
                 _snippet = result.get("snippet", {})
                 data = {
@@ -158,8 +164,10 @@ class Command:
                     'title': _snippet.get("title")
                 }
             elif isinstance(position, list):
+                if "cancel"in position:
+                    return
                 result = [
-                    _data.items[x-1] for x in position
+                    _data.items[x] for x in position
                 ]
                 data = [
                     {
@@ -180,7 +188,7 @@ class Command:
             data = await source_Youtube.create_source(
                 url=search,
                 loop=self.bot.loop,
-                ie_key=ie_key
+                ie_key=ie_key.ie_key()
             )
             data['requester'] = ctx.author
 
@@ -192,8 +200,7 @@ class Command:
             )
         elif isinstance(data, list):
             _ = await client.muiti_comment_queue(
-                title=data,
-                url=data,
+                data=data,
                 b_message=b_message
             )
         player = self.get_player(ctx)

@@ -54,18 +54,18 @@ class Search:
         elif len(data) <= 5:
             description_data = _data = data[0:]
         else:
-            _data = data[0:49]
+            _data = data[0:24]
             description_data = data[0:5]
 
         embed = discord.Embed(
             title="Music Bot",
             description="다음 항목 중 재생할 노래를 선택해주세요.```scss\n{0}\n```".format(
-                [
+                "\n".join([
                     "[{0}] {1}".format(
                         index + 1,
                         video["snippet"]["title"]
                     ) for index, video in enumerate(description_data)
-                ]
+                ])
             ),
             color=self.color
         )
@@ -74,10 +74,10 @@ class Search:
                 label="{0}".format(
                     value["snippet"].get("title", "")
                 ), value="selection_player_{0}".format(index),
-                description="{0}".format(
+                description="https://www.youtube.com/watch?v={0}".format(
                     value["id"].get("videoId", None)
                 ), emoji=discord.PartialEmoji(name="{0}\U0000FE0F\U000020E3".format(
-                    str(index + 1)[0]
+                    str(index + 1)[-1]
                 ))
             ) for index, value in enumerate(_data)
         ]
@@ -97,7 +97,7 @@ class Search:
                     Selection(
                         custom_id=self.selection_id,
                         min_values=1,
-                        max_values=49,
+                        max_values=24,
                         options=options
                     )
                 ]
@@ -117,13 +117,32 @@ class Search:
             )
             await msg.edit(embed=embed)
             return None, msg
+        await component.defer_update()
         _buffer = "selection_player_"
         len_buffer = len(_buffer)
         if len(component.values) == 1:
-            return int(component.values[0][len_buffer:]), msg
-        return [int(value[len_buffer:]) for value in component.values], msg
+            value = component.values[0][len_buffer:]
+            if value.isdigit():
+                value = int(value)
+            return value, msg
+        return [
+                   int(value[len_buffer:])
+                   if value[len_buffer:].isdigit()
+                   else value[len_buffer:]
+                   for value in component.values
+               ], msg
 
-    async def comment_queue(self, title, url, b_message: Optional[Message] = None) -> Optional[Message]:
+    async def comment_queue(
+            self,
+            title,
+            url,
+            b_message: Optional[
+                Union[
+                    Message,
+                    ComponentsContext
+                ]
+            ] = None
+    ) -> Optional[Message]:
         embed = discord.Embed(
             title="Music Bot",
             description="[{title}]({url})이/가 정상적으로 추가되었습니다.".format(
@@ -135,14 +154,23 @@ class Search:
             text="{0}#{1}".format(self.context.author.name, self.context.author.discriminator),
             icon_url=self.context.author.avatar.url
         )
-
+        print(b_message, b_message is None)
         if b_message is None:
             return await self.context.send(embed=embed)
         else:
             await b_message.edit(embed=embed)
         return
 
-    async def muiti_comment_queue(self, data, b_message: Optional[Message] = None) -> Optional[Message]:
+    async def muiti_comment_queue(
+            self,
+            data,
+            b_message: Optional[
+                Union[
+                    Message,
+                    ComponentsContext
+                ]
+            ] = None
+    ) -> Optional[Message]:
         embed = discord.Embed(
             title="Music Bot",
             description="[{title}]({url}) 외 {count}개가 정상적으로 추가되었습니다.".format(
