@@ -38,8 +38,6 @@ log = logging.getLogger()
 
 class InteractionContext:
     def __init__(self, payload: dict, client: discord.Client):
-        self.prefix: Optional[str] = None
-
         self.client = client
         self.id: int = getattr(discord.utils, "_get_as_snowflake")(payload, "id")
         self.version = payload.get("version")
@@ -273,6 +271,9 @@ class ApplicationContext(InteractionContext):
                 else:
                     self.options[key] = value
         self._resolved = data.get("resolved", {})
+
+        self.prefix: Optional[str] = "/"
+        self.command_prefix = "/"
 
     @property
     def content(self):

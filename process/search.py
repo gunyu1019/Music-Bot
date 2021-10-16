@@ -144,7 +144,7 @@ class Search:
             ] = None
     ) -> Optional[Message]:
         embed = discord.Embed(
-            title="Music Bot",
+            title="Play!",
             description="[{title}]({url})이/가 정상적으로 추가되었습니다.".format(
                 title=title, url=url
             ),
@@ -171,7 +171,7 @@ class Search:
             ] = None
     ) -> Optional[Message]:
         embed = discord.Embed(
-            title="Music Bot",
+            title="Play!",
             description="[{title}]({url}) 외 {count}개가 정상적으로 추가되었습니다.".format(
                 title=data[0]['title'], url=data[0]['webpage_url'], count=(len(data) - 1)
             ),
@@ -190,7 +190,7 @@ class Search:
 
     async def stream_error(self):
         embed = discord.Embed(
-            title="Music Bot",
+            title="Error!",
             description="음악을 불러오는 도중 에러가 발생하였습니다.",
             color=self.error_color
         )

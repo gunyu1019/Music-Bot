@@ -1,7 +1,7 @@
 import discord
 import asyncio
 
-from typing import Union
+from typing import Union, Optional
 from youtube_dl import extractor
 from config.config import parser
 from module import commands
@@ -47,30 +47,29 @@ class Command:
         return player
 
     @commands.command(name='연결', aliases=['join', 'j'])
-    async def connect(self, ctx: Union[MessageCommand, ApplicationContext]):
+    async def connect(
+            self,
+            ctx: Union[MessageCommand, ApplicationContext],
+            invoke: bool = False
+    ):
         try:
             channel = ctx.author.voice.channel
         except AttributeError:
-            embed = discord.Embed(
-                title="Music Bot",
-                description="음성채널에 먼저 들어가신 후, 명령어를 사용해주세요.",
-                color=self.warning_color
+            await ctx.send(
+                content="\U000026A0 음성채널에 먼저 들어가신 후, 명령어를 사용해주세요."
             )
-            await ctx.send(embed=embed)
             return
 
-        vc = ctx.voice_client
+        vc: Optional[discord.VoiceProtocol] = ctx.voice_client
 
         if vc is not None:
+            vc: discord.VoiceClient
             if vc.channel.id == channel.id:
-                embed = discord.Embed(
-                    title="Music Bot",
-                    description="이미 음성 채널({channel})에 들어가 있습니다.".format(
+                await ctx.send(
+                    content="\U000026A0 이미 음성 채널({channel})에 들어가 있습니다.".format(
                         channel=channel.mention
-                    ),
-                    color=self.warning_color
+                    )
                 )
-                await ctx.send(embed=embed)
                 return
             try:
                 await vc.move_to(channel)
@@ -81,14 +80,16 @@ class Command:
                 await channel.connect()
             except asyncio.TimeoutError:
                 return
-        embed = discord.Embed(
-            title="Music Bot",
-            description="음성 채널({channel})에 연결을 하였습니다.".format(
-                channel=channel.mention
-            ),
-            color=self.color
-        )
-        await ctx.send(embed=embed)
+
+        if invoke:
+            embed = discord.Embed(
+                title="Connect!",
+                description="음성 채널({channel})에 연결 하였습니다.".format(
+                    channel=channel.mention
+                ),
+                color=self.color
+            )
+            await ctx.send(embed=embed)
 
     @commands.command(name='재생', aliases=['play', 'p'])
     async def play(self, ctx: Union[ApplicationContext, MessageCommand]):
@@ -96,12 +97,11 @@ class Command:
             search = " ".join([x for x in ctx.options.values()])
         else:
             if len(ctx.options) == 0:
-                embed = discord.Embed(
-                    title="Music Bot",
-                    description="재생하실 노래를 작성해주세요.",
-                    color=self.warning_color
+                await ctx.send(
+                    content="\U000026A0 재생할 노래를 작성해주세요.\n> {prefix}".format(
+                        prefix=ctx.command_prefix
+                    )
                 )
-                await ctx.send(embed=embed)
                 return
             search = " ".join(ctx.options[0:])
         original_search = search
@@ -125,7 +125,7 @@ class Command:
             if isinstance(position, str):
                 # Only cancel is string
                 embed = discord.Embed(
-                    title="Music Bot",
+                    title="Play!",
                     description="사용자 요청에 따라 취소 되었습니다.",
                     color=self.color
                 )
