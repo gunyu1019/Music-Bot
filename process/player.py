@@ -63,7 +63,7 @@ class Player:
                 source,
                 after=lambda _: self.bot.loop.call_soon_threadsafe(self.next.set)
             )
-            await self.client.playing(source)
+            # await self.client.playing(source)
             await self.next.wait()
 
             source.cleanup()

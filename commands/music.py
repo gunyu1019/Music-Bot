@@ -48,37 +48,16 @@ class Command:
 
     @commands.command(name='연결', aliases=['join', 'j'])
     async def connect(self, ctx: Union[MessageCommand, ApplicationContext]):
-        channel = None
-        if isinstance(ctx, ApplicationContext):
-            channel = ctx.options[0]
-        else:
-            if len(ctx.options) == 1:
-                channel_id = ctx.options[0]
-                channel = ctx.guild.get_channel(channel_id)
-                if not isinstance(channel, discord.VoiceChannel):
-                    embed = discord.Embed(
-                        title="Music Bot",
-                        description="{channel}는 음성 채널이 아닙니다.".format(
-                            channel=channel
-                        ),
-                        color=self.warning_color
-                    )
-                    await ctx.send(embed=embed)
-                    return
-            elif len(ctx.options) > 1:
-                return
-
-        if channel is None:
-            try:
-                channel = ctx.author.voice.channel
-            except AttributeError:
-                embed = discord.Embed(
-                    title="Music Bot",
-                    description="음성채널에 먼저 들어가신 후, 명령어를 사용해주세요.",
-                    color=self.warning_color
-                )
-                await ctx.send(embed=embed)
-                return
+        try:
+            channel = ctx.author.voice.channel
+        except AttributeError:
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 먼저 들어가신 후, 명령어를 사용해주세요.",
+                color=self.warning_color
+            )
+            await ctx.send(embed=embed)
+            return
 
         vc = ctx.voice_client
 
@@ -377,27 +356,57 @@ class Command:
         await ctx.send(embed=embed)
 
     @commands.command(name='volume', aliases=['vol', 'v'])
-    async def change_volume(self, ctx, *, vol: float = None):
+    async def change_volume(self, ctx):
+        if isinstance(ctx, ApplicationContext):
+            volume = ctx.options.get("volume")
+        else:
+            if len(ctx.options) == 0:
+                embed = discord.Embed(
+                    title="Music Bot",
+                    description="검색하실 노래를 작성해주세요.",
+                    color=self.warning_color
+                )
+                await ctx.send(embed=embed)
+                return
+            elif len(ctx.options) > 1:
+                embed = discord.Embed(
+                    title="Music Bot",
+                    description="알 수 없는 인자입니다.",
+                    color=self.warning_color
+                )
+                await ctx.send(embed=embed)
+                return
+            volume = ctx.options[0]
         vc = ctx.voice_client
 
         if not vc or not vc.is_connected():
-            embed = discord.Embed(title="", description="I am not currently connected to voice",
-                                  color=discord.Color.green())
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
-        if not vol:
-            embed = discord.Embed(title="", description=f"🔊 **{(vc.source.volume) * 100}%**",
-                                  color=discord.Color.green())
+        if not volume:
+            # {(vc.source.volume) * 100}
+            embed = discord.Embed(
+                title="Music Bot",
+                description="음성채널에 연결되어 있지 않습니다.",
+                color=self.color
+            )
             return await ctx.send(embed=embed)
 
         player = self.get_player(ctx)
 
         if vc.source:
-            vc.source.volume = vol / 100
+            vc.source.volume = volume / 100
 
-        player.volume = vol / 100
-        embed = discord.Embed(title="", description=f'**`{ctx.author}`** set the volume to **{vol}%**',
-                              color=discord.Color.green())
+        player.volume = volume / 100
+        embed = discord.Embed(
+            title="Music Bot",
+            description="음성채널에 연결되어 있지 않습니다.",
+            color=self.color
+        )
         await ctx.send(embed=embed)
 
     @commands.command(name='나가기', aliases=["stop", "disconnect", "나가기"])

@@ -197,22 +197,22 @@ class Search:
         await self.context.send(embed)
         return
 
-    async def playing(self, source):
-        embed = discord.Embed(
-            title="Music Bot",
-            description="[{title}]({url})".format(
-                title=source.title,
-                url=source.web_url
-            ),
-            color=self.color
-        )
-        embed.set_footer(
-            text="신청 - {0}#{1}".format(
-                source.requester.name,
-                source.requester.discriminator
-            ),
-            icon_url=source.requester.avatar.url
-        )
-        embed.set_thumbnail(url=source.thumbnail.url)
-        await self.context.send(embed=embed)
-        return
+    # async def playing(self, source):
+    #     embed = discord.Embed(
+    #         title="Music Bot",
+    #         description="[{title}]({url})".format(
+    #             title=source.title,
+    #             url=source.web_url
+    #         ),
+    #         color=self.color
+    #     )
+    #     embed.set_footer(
+    #         text="신청 - {0}#{1}".format(
+    #             source.requester.name,
+    #             source.requester.discriminator
+    #         ),
+    #         icon_url=source.requester.avatar.url
+    #     )
+    #     embed.set_thumbnail(url=source.thumbnail.url)
+    #     await self.context.send(embed=embed)
+    #     return
