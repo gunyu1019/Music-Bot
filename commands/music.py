@@ -46,7 +46,7 @@ class Command:
             self.players[ctx.guild.id] = player
         return player
 
-    @commands.command(name='연결', aliases=['join', 'j'])
+    @commands.command(name='join', aliases=['j'])
     async def connect(
             self,
             ctx: Union[MessageCommand, ApplicationContext],
@@ -91,7 +91,7 @@ class Command:
             )
             await ctx.send(embed=embed)
 
-    @commands.command(name='재생', aliases=['play', 'p'])
+    @commands.command(name='play', aliases=['p'])
     async def play(self, ctx: Union[ApplicationContext, MessageCommand]):
         if isinstance(ctx, ApplicationContext):
             search = " ".join([x for x in ctx.options.values()])
@@ -189,7 +189,7 @@ class Command:
         else:
             await player.queue.put(data)
 
-    @commands.command(name='일시정지', aliases=['pause'])
+    @commands.command(name='pause', aliases=[])
     async def pause(self, ctx):
         vc = ctx.voice_client
 
@@ -218,7 +218,7 @@ class Command:
             return
         await ctx.send(embed=embed)
 
-    @commands.command(name='스킵', aliases=['skip'])
+    @commands.command(name='skip', aliases=['s'])
     async def skip(self, ctx):
         vc = ctx.voice_client
 
@@ -237,7 +237,7 @@ class Command:
 
         vc.stop()
 
-    @commands.command(name='정지', aliases=['stop'])
+    @commands.command(name='remove', aliases=['stop'])
     async def stop(self, ctx, pos: int = None):
         vc = ctx.voice_client
 
@@ -284,7 +284,6 @@ class Command:
     @commands.command(name='queue', aliases=['q', 'playlist', 'que'])
     async def queue_info(self, ctx):
         vc = ctx.voice_client
-
 
         if not vc or not vc.is_connected():
             embed = discord.Embed(
@@ -361,22 +360,17 @@ class Command:
             volume = ctx.options.get("volume")
         else:
             if len(ctx.options) == 0:
-                embed = discord.Embed(
-                    title="Music Bot",
-                    description="검색하실 노래를 작성해주세요.",
-                    color=self.warning_color
-                )
-                await ctx.send(embed=embed)
-                return
+                volume = None
             elif len(ctx.options) > 1:
                 embed = discord.Embed(
-                    title="Music Bot",
+                    title="\U000026A0 경고",
                     description="알 수 없는 인자입니다.",
                     color=self.warning_color
                 )
                 await ctx.send(embed=embed)
                 return
-            volume = ctx.options[0]
+            else:
+                volume = ctx.options[0]
         vc = ctx.voice_client
 
         if not vc or not vc.is_connected():
@@ -409,7 +403,7 @@ class Command:
         )
         await ctx.send(embed=embed)
 
-    @commands.command(name='나가기', aliases=["stop", "disconnect", "나가기"])
+    @commands.command(name='leave', aliases=["stop", "disconnect"])
     async def leave(self, ctx):
         vc = ctx.voice_client
 
