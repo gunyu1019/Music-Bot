@@ -320,9 +320,8 @@ class Command:
         await ctx.send(embed=embed)
 
     @commands.command(name='np', aliases=['song', 'current', 'currentsong', 'playing'])
-    async def now_playing_(self, ctx):
+    async def now_playing(self, ctx):
         vc = ctx.voice_client
-
 
         if not vc or not vc.is_connected():
             embed = discord.Embed(
